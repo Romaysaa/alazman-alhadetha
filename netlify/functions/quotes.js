@@ -69,6 +69,8 @@ exports.handler = async (event, context) => {
         discountEnabled: !!it.discountEnabled,
         discountAmount: Number(it.discountAmount) || 0,
         imageUrl: it.imageUrl || null,
+        attributes: it.attributes && typeof it.attributes === "object" ? it.attributes : {},
+        itemNotes: (it.itemNotes || "").trim(),
         total,
       };
     });

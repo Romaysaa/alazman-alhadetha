@@ -18,18 +18,45 @@ const tTotal = document.getElementById("tTotal");
 // restore the login-gate line at the bottom of this file) before real use.
 const TEST_MODE = true;
 
+// Product categories and their type-specific fields, matching OfficeArt's
+// "مكتب" configurator. Add more categories here as they're defined.
+const PRODUCT_CATEGORIES = {
+  "مكتب": ["السطح", "الأرجل", "الملحق", "الستارة", "أدراج"],
+};
+const OTHER_CATEGORY = "أخرى";
+
 let currentItems = [];
 let editingId = null;
 
 function newItem() {
   return {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    type: "",
+    category: "",
+    customType: "",
+    attributes: {},
+    itemNotes: "",
     qty: 1,
     unitPrice: 0,
     discountEnabled: false,
     discountAmount: 0,
     imageUrl: null,
+  };
+}
+
+function effectiveType(item) {
+  if (item.category === OTHER_CATEGORY) return (item.customType || "").trim();
+  return item.category || "";
+}
+
+function hydrateItem(rawItem) {
+  const isKnownCategory = Object.prototype.hasOwnProperty.call(PRODUCT_CATEGORIES, rawItem.type);
+  return {
+    ...rawItem,
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    category: isKnownCategory ? rawItem.type : rawItem.type ? OTHER_CATEGORY : "",
+    customType: isKnownCategory ? "" : rawItem.type || "",
+    attributes: rawItem.attributes || {},
+    itemNotes: rawItem.itemNotes || "",
   };
 }
 
@@ -63,9 +90,32 @@ function renderItems() {
         <span class="item-index">${index + 1}</span>
         <label class="item-type">
           نوع المنتج:
-          <input type="text" data-field="type" value="${escapeAttr(item.type)}" placeholder="اسم المنتج">
+          <select data-field="category">
+            <option value="">اختر النوع</option>
+            ${Object.keys(PRODUCT_CATEGORIES)
+              .map((cat) => `<option value="${escapeAttr(cat)}" ${item.category === cat ? "selected" : ""}>${escapeHtml(cat)}</option>`)
+              .join("")}
+            <option value="${OTHER_CATEGORY}" ${item.category === OTHER_CATEGORY ? "selected" : ""}>أخرى (اكتب يدوياً)</option>
+          </select>
         </label>
+        ${
+          item.category === OTHER_CATEGORY
+            ? `<input type="text" data-field="customType" value="${escapeAttr(item.customType)}" placeholder="اسم المنتج" class="item-custom-type">`
+            : ""
+        }
       </div>
+      ${
+        item.category && PRODUCT_CATEGORIES[item.category]
+          ? `<div class="item-attributes">
+              ${PRODUCT_CATEGORIES[item.category]
+                .map(
+                  (attr) => `<label>${escapeHtml(attr)}<input type="text" data-field="attr:${escapeAttr(attr)}" value="${escapeAttr(item.attributes[attr] || "")}" placeholder="ابحث أو اختر..."></label>`
+                )
+                .join("")}
+              <label class="item-notes-field">ملاحظات<textarea data-field="itemNotes" rows="2" placeholder="أدخل ملاحظات">${escapeHtml(item.itemNotes)}</textarea></label>
+            </div>`
+          : ""
+      }
       <div class="item-row-body">
         <div class="item-row-main">
           <div class="item-row-fields">
@@ -102,20 +152,33 @@ function renderItems() {
     `;
 
     row.querySelectorAll("[data-field]").forEach((el) => {
-      el.addEventListener("input", () => {
+      const eventName = el.tagName === "SELECT" ? "change" : "input";
+      el.addEventListener(eventName, () => {
         const field = el.dataset.field;
-        if (field === "discountEnabled") {
-          item.discountEnabled = el.checked;
+        if (field === "category") {
+          item.category = el.value;
+          if (el.value !== OTHER_CATEGORY) item.customType = "";
+          if (!PRODUCT_CATEGORIES[el.value]) item.attributes = {};
           renderItems();
           recalcTotals();
           return;
         }
-        if (field === "type") {
-          item.type = el.value;
+        if (field === "customType") {
+          item.customType = el.value;
+        } else if (field === "itemNotes") {
+          item.itemNotes = el.value;
+        } else if (field.startsWith("attr:")) {
+          item.attributes[field.slice(5)] = el.value;
+        } else if (field === "discountEnabled") {
+          item.discountEnabled = el.checked;
+          renderItems();
+          recalcTotals();
+          return;
         } else {
           item[field] = Number(el.value) || 0;
         }
-        row.querySelector(".item-total strong").textContent = fmt(itemTotal(item));
+        const totalEl = row.querySelector(".item-total strong");
+        if (totalEl) totalEl.textContent = fmt(itemTotal(item));
         recalcTotals();
       });
     });
@@ -230,7 +293,7 @@ document.getElementById("newBtn").addEventListener("click", resetForm);
 
 document.getElementById("previewBtn").addEventListener("click", () => {
   const lines = currentItems
-    .map((it) => `${it.type || "بدون اسم"} × ${it.qty} = ${fmt(itemTotal(it))} ريال`)
+    .map((it) => `${effectiveType(it) || "بدون اسم"} × ${it.qty} = ${fmt(itemTotal(it))} ريال`)
     .join("\n");
   alert(
     `عميل: ${fClientName.value || "-"}\nجوال: ${fClientPhone.value || "-"}\n\n${lines}\n\nالإجمالي شامل الضريبة: ${tTotal.textContent} ريال`
@@ -273,7 +336,7 @@ function renderSavedQuotes(list) {
       fClientName.value = q.clientName;
       fClientPhone.value = q.clientPhone || "";
       fDelivery.checked = !!q.deliveryOutsideRiyadh;
-      currentItems = q.items.map((it) => ({ ...it, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }));
+      currentItems = q.items.map(hydrateItem);
       renderItems();
       recalcTotals();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -310,10 +373,15 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     alert("الرجاء إدخال اسم العميل");
     return;
   }
-  if (!currentItems.length || currentItems.every((it) => !it.type.trim())) {
+  if (!currentItems.length || currentItems.every((it) => !effectiveType(it).trim())) {
     alert("أضف منتجاً واحداً على الأقل");
     return;
   }
+
+  const payloadItems = currentItems.map((it) => ({
+    ...it,
+    type: effectiveType(it),
+  }));
 
   try {
     const res = await authFetch("/.netlify/functions/quotes", {
@@ -323,7 +391,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
         clientName,
         clientPhone: fClientPhone.value.trim(),
         deliveryOutsideRiyadh: fDelivery.checked,
-        items: currentItems,
+        items: payloadItems,
       }),
     });
     if (!res.ok) throw new Error("failed to save");
