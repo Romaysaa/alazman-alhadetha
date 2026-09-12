@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
 
@@ -113,5 +114,11 @@
 </footer>
 
 <script src="script.js"></script>
+<script>
+  netlifyIdentity.on("login", function () {
+    window.location.href = "quotes.html";
+  });
+  netlifyIdentity.init();
+</script>
 </body>
 </html>
