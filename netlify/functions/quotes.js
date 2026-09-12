@@ -1,10 +1,12 @@
 const { getStore } = require("@netlify/blobs");
 
+// TEMPORARY: login requirement disabled for testing. Re-enable the block below
+// (require an authenticated Identity user) before real staff data goes in here.
 exports.handler = async (event, context) => {
   const user = context.clientContext && context.clientContext.user;
-  if (!user) {
-    return { statusCode: 401, body: JSON.stringify({ error: "غير مصرح لك بالدخول" }) };
-  }
+  // if (!user) {
+  //   return { statusCode: 401, body: JSON.stringify({ error: "غير مصرح لك بالدخول" }) };
+  // }
 
   const store = getStore("quotes");
 
@@ -35,7 +37,7 @@ exports.handler = async (event, context) => {
       client,
       plan,
       notes,
-      createdBy: user.email,
+      createdBy: user ? user.email : "زائر (وضع الاختبار)",
       createdAt: new Date().toISOString(),
     };
     list.unshift(entry);
