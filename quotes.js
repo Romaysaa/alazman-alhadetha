@@ -2,34 +2,169 @@ const loggedOutEl = document.getElementById("loggedOut");
 const loggedInEl = document.getElementById("loggedIn");
 const userEmailEl = document.getElementById("userEmail");
 const quoteListEl = document.getElementById("quoteList");
-const newForm = document.getElementById("newForm");
 const loadErrorEl = document.getElementById("loadError");
+const itemsListEl = document.getElementById("itemsList");
+
+const fClientName = document.getElementById("fClientName");
+const fClientPhone = document.getElementById("fClientPhone");
+const fDelivery = document.getElementById("fDelivery");
+
+const tSubtotal = document.getElementById("tSubtotal");
+const tTax = document.getElementById("tTax");
+const tTotal = document.getElementById("tTotal");
 
 // TEMPORARY: TEST_MODE skips the login gate entirely so the dashboard is
 // usable while Netlify Identity email is being set up. Set to false (and
 // restore the login-gate line at the bottom of this file) before real use.
 const TEST_MODE = true;
 
-function showLoggedIn(user) {
-  loggedOutEl.hidden = true;
-  loggedInEl.hidden = false;
-  userEmailEl.textContent = user ? user.email : "وضع الاختبار (بدون تسجيل دخول)";
-  loadQuotes();
+let currentItems = [];
+let editingId = null;
+
+function newItem() {
+  return {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    type: "",
+    qty: 1,
+    unitPrice: 0,
+    discountEnabled: false,
+    discountAmount: 0,
+  };
 }
 
-function showLoggedOut() {
-  loggedOutEl.hidden = false;
-  loggedInEl.hidden = true;
+function itemTotal(item) {
+  const qty = Number(item.qty) || 0;
+  const unitPrice = Number(item.unitPrice) || 0;
+  const discount = item.discountEnabled ? Number(item.discountAmount) || 0 : 0;
+  return Math.max(0, qty * unitPrice - discount);
+}
+
+function fmt(n) {
+  return (Math.round(n * 100) / 100).toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function recalcTotals() {
+  const subtotal = currentItems.reduce((sum, it) => sum + itemTotal(it), 0);
+  const tax = subtotal * 0.15;
+  const total = subtotal + tax;
+  tSubtotal.textContent = fmt(subtotal);
+  tTax.textContent = fmt(tax);
+  tTotal.textContent = fmt(total);
+}
+
+function renderItems() {
+  itemsListEl.innerHTML = "";
+  currentItems.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "item-row";
+    row.innerHTML = `
+      <div class="item-row-top">
+        <span class="item-index">${index + 1}</span>
+        <label class="item-type">
+          نوع المنتج:
+          <input type="text" data-field="type" value="${escapeAttr(item.type)}" placeholder="اسم المنتج">
+        </label>
+      </div>
+      <div class="item-row-fields">
+        <label>
+          الكمية
+          <input type="number" min="0" step="1" data-field="qty" value="${item.qty}">
+        </label>
+        <label>
+          سعر الوحدة
+          <input type="number" min="0" step="0.01" data-field="unitPrice" value="${item.unitPrice}">
+        </label>
+        <label class="discount-toggle">
+          <input type="checkbox" data-field="discountEnabled" ${item.discountEnabled ? "checked" : ""}>
+          خصم خاص على هذا البند
+        </label>
+        ${item.discountEnabled ? `<label>قيمة الخصم<input type="number" min="0" step="0.01" data-field="discountAmount" value="${item.discountAmount}"></label>` : ""}
+        <div class="item-total">الإجمالي قبل الضريبة: <strong>${fmt(itemTotal(item))}</strong></div>
+      </div>
+      <div class="item-row-actions">
+        <button type="button" class="btn btn-outline btn-sm" data-action="duplicate">نسخ المنتج</button>
+        <button type="button" class="btn btn-outline btn-sm" data-action="delete">حذف المنتج</button>
+      </div>
+    `;
+
+    row.querySelectorAll("[data-field]").forEach((el) => {
+      el.addEventListener("input", () => {
+        const field = el.dataset.field;
+        if (field === "discountEnabled") {
+          item.discountEnabled = el.checked;
+          renderItems();
+          recalcTotals();
+          return;
+        }
+        if (field === "type") {
+          item.type = el.value;
+        } else {
+          item[field] = Number(el.value) || 0;
+        }
+        row.querySelector(".item-total strong").textContent = fmt(itemTotal(item));
+        recalcTotals();
+      });
+    });
+
+    row.querySelector('[data-action="delete"]').addEventListener("click", () => {
+      currentItems = currentItems.filter((it) => it.id !== item.id);
+      renderItems();
+      recalcTotals();
+    });
+
+    row.querySelector('[data-action="duplicate"]').addEventListener("click", () => {
+      const copy = { ...item, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) };
+      const pos = currentItems.indexOf(item);
+      currentItems.splice(pos + 1, 0, copy);
+      renderItems();
+      recalcTotals();
+    });
+
+    itemsListEl.appendChild(row);
+  });
+}
+
+function escapeAttr(str) {
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML.replace(/"/g, "&quot;");
 }
 
 function escapeHtml(str) {
   const div = document.createElement("div");
-  div.textContent = str;
+  div.textContent = str || "";
   return div.innerHTML;
 }
 
+function resetForm() {
+  editingId = null;
+  fClientName.value = "";
+  fClientPhone.value = "";
+  fDelivery.checked = false;
+  currentItems = [newItem()];
+  renderItems();
+  recalcTotals();
+}
+
+document.getElementById("addItemBtn").addEventListener("click", () => {
+  currentItems.push(newItem());
+  renderItems();
+  recalcTotals();
+});
+
+document.getElementById("newBtn").addEventListener("click", resetForm);
+
+document.getElementById("previewBtn").addEventListener("click", () => {
+  const lines = currentItems
+    .map((it) => `${it.type || "بدون اسم"} × ${it.qty} = ${fmt(itemTotal(it))} ريال`)
+    .join("\n");
+  alert(
+    `عميل: ${fClientName.value || "-"}\nجوال: ${fClientPhone.value || "-"}\n\n${lines}\n\nالإجمالي شامل الضريبة: ${tTotal.textContent} ريال`
+  );
+});
+
 async function authFetch(url, options = {}) {
-  const user = netlifyIdentity.currentUser();
+  const user = window.netlifyIdentity && netlifyIdentity.currentUser();
   const token = user ? await user.jwt() : null;
   return fetch(url, {
     ...options,
@@ -40,23 +175,45 @@ async function authFetch(url, options = {}) {
   });
 }
 
-function renderQuotes(list) {
+function renderSavedQuotes(list) {
   quoteListEl.innerHTML = "";
   if (!list.length) {
-    quoteListEl.innerHTML = '<li class="quote-empty">لا توجد عروض بعد. اضغط "جديد" لإضافة أول عرض.</li>';
+    quoteListEl.innerHTML = '<li class="quote-empty">لا توجد عروض بعد.</li>';
     return;
   }
   for (const q of list) {
     const li = document.createElement("li");
-    li.className = "quote-item";
+    li.className = "saved-quote-item";
     li.innerHTML = `
-      <div class="quote-item-top">
-        <strong>${escapeHtml(q.client)}</strong>
-        <span class="quote-plan">${escapeHtml(q.plan)}</span>
+      <div class="saved-quote-top">
+        <strong>${escapeHtml(q.clientName)}</strong>
+        <span class="saved-quote-total">${fmt(q.total)} ريال</span>
       </div>
-      ${q.notes ? `<p>${escapeHtml(q.notes)}</p>` : ""}
-      <small>${new Date(q.createdAt).toLocaleString("ar-SA")} — ${escapeHtml(q.createdBy)}</small>
+      <small>${escapeHtml(q.quoteNumber)}</small>
+      <div class="saved-quote-actions">
+        <button type="button" class="btn btn-outline btn-sm" data-action="copy">نسخ العرض</button>
+        <button type="button" class="btn btn-outline btn-sm" data-action="delete">حذف</button>
+      </div>
     `;
+    li.querySelector('[data-action="copy"]').addEventListener("click", () => {
+      fClientName.value = q.clientName;
+      fClientPhone.value = q.clientPhone || "";
+      fDelivery.checked = !!q.deliveryOutsideRiyadh;
+      currentItems = q.items.map((it) => ({ ...it, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }));
+      renderItems();
+      recalcTotals();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    li.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+      if (!confirm("هل تريد حذف هذا العرض؟")) return;
+      try {
+        const res = await authFetch(`/.netlify/functions/quotes?id=${encodeURIComponent(q.id)}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("failed");
+        loadQuotes();
+      } catch {
+        alert("تعذّر حذف العرض");
+      }
+    });
     quoteListEl.appendChild(li);
   }
 }
@@ -66,29 +223,21 @@ async function loadQuotes() {
   try {
     const res = await authFetch("/.netlify/functions/quotes");
     if (!res.ok) throw new Error("failed to load");
-    renderQuotes(await res.json());
+    renderSavedQuotes(await res.json());
   } catch {
     loadErrorEl.textContent = "تعذّر تحميل العروض. هذه الميزة تعمل فقط بعد نشر الموقع على Netlify مع تفعيل Identity.";
     loadErrorEl.hidden = false;
   }
 }
 
-document.getElementById("loginBtn").addEventListener("click", () => netlifyIdentity.open("login"));
-document.getElementById("logoutBtn").addEventListener("click", () => netlifyIdentity.logout());
-document.getElementById("newBtn").addEventListener("click", () => {
-  newForm.hidden = !newForm.hidden;
-});
-document.getElementById("cancelBtn").addEventListener("click", () => {
-  newForm.hidden = true;
-});
-
 document.getElementById("saveBtn").addEventListener("click", async () => {
-  const client = document.getElementById("fClient").value.trim();
-  const plan = document.getElementById("fPlan").value;
-  const notes = document.getElementById("fNotes").value.trim();
-
-  if (!client) {
+  const clientName = fClientName.value.trim();
+  if (!clientName) {
     alert("الرجاء إدخال اسم العميل");
+    return;
+  }
+  if (!currentItems.length || currentItems.every((it) => !it.type.trim())) {
+    alert("أضف منتجاً واحداً على الأقل");
     return;
   }
 
@@ -96,17 +245,36 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     const res = await authFetch("/.netlify/functions/quotes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client, plan, notes }),
+      body: JSON.stringify({
+        clientName,
+        clientPhone: fClientPhone.value.trim(),
+        deliveryOutsideRiyadh: fDelivery.checked,
+        items: currentItems,
+      }),
     });
     if (!res.ok) throw new Error("failed to save");
-    document.getElementById("fClient").value = "";
-    document.getElementById("fNotes").value = "";
-    newForm.hidden = true;
+    resetForm();
     loadQuotes();
   } catch {
-    alert("حدث خطأ أثناء حفظ العرض. تأكد من نشر الموقع على Netlify مع تفعيل Identity.");
+    alert("حدث خطأ أثناء حفظ العرض.");
   }
 });
+
+function showLoggedIn(user) {
+  loggedOutEl.hidden = true;
+  loggedInEl.hidden = false;
+  userEmailEl.textContent = user ? user.email : "وضع الاختبار (بدون تسجيل دخول)";
+  resetForm();
+  loadQuotes();
+}
+
+function showLoggedOut() {
+  loggedOutEl.hidden = false;
+  loggedInEl.hidden = true;
+}
+
+document.getElementById("loginBtn").addEventListener("click", () => netlifyIdentity.open("login"));
+document.getElementById("logoutBtn").addEventListener("click", () => netlifyIdentity.logout());
 
 netlifyIdentity.on("init", (user) => (TEST_MODE || user ? showLoggedIn(user) : showLoggedOut()));
 netlifyIdentity.on("login", (user) => {

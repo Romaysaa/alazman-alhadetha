@@ -48,40 +48,64 @@
         <div class="internal-header">
           <div>
             <p class="section-label">لوحة الفريق</p>
-            <h1>عروض الأسعار</h1>
+            <h1>تعديل عرض سعر</h1>
           </div>
           <div class="internal-actions">
             <span id="userEmail" class="user-email"></span>
-            <button id="newBtn" class="btn btn-primary">+ جديد</button>
             <button id="logoutBtn" class="btn btn-outline">تسجيل الخروج</button>
           </div>
         </div>
 
-        <div id="newForm" class="quote-form" hidden>
-          <label>
-            اسم العميل
-            <input id="fClient" type="text" placeholder="اسم العميل أو الشركة">
-          </label>
-          <label>
-            الباقة
-            <select id="fPlan">
-              <option>الباقة الأساسية</option>
-              <option>الباقة الاحترافية</option>
-              <option>باقة الشركات</option>
-            </select>
-          </label>
-          <label>
-            ملاحظات
-            <textarea id="fNotes" rows="3" placeholder="تفاصيل إضافية عن العرض"></textarea>
-          </label>
-          <div class="quote-form-actions">
-            <button id="saveBtn" class="btn btn-primary">حفظ العرض</button>
-            <button id="cancelBtn" class="btn btn-outline" type="button">إلغاء</button>
-          </div>
-        </div>
+        <div class="quote-workspace">
 
-        <p id="loadError" class="form-error" hidden></p>
-        <ul id="quoteList" class="quote-list"></ul>
+          <div class="quote-editor">
+            <div class="editor-toolbar">
+              <button id="saveBtn" class="btn btn-primary">💾 حفظ العرض</button>
+              <button id="previewBtn" class="btn btn-outline" type="button">👁 معاينة العرض</button>
+              <button id="newBtn" class="btn btn-outline" type="button">جديد</button>
+            </div>
+
+            <div class="editor-card">
+              <h2>معلومات العميل</h2>
+              <div class="client-fields">
+                <label>
+                  اسم العميل او الشركة
+                  <input id="fClientName" type="text" placeholder="اسم العميل او الشركة">
+                </label>
+                <label>
+                  رقم الجوال
+                  <input id="fClientPhone" type="tel" placeholder="أدخل رقم الجوال">
+                </label>
+              </div>
+            </div>
+
+            <div class="editor-card">
+              <div class="products-header">
+                <h2>تحرير المنتجات</h2>
+                <label class="delivery-check">
+                  <input id="fDelivery" type="checkbox">
+                  التوصيل خارج الرياض
+                </label>
+                <button id="addItemBtn" class="btn btn-primary btn-sm" type="button">+ إضافة منتج</button>
+              </div>
+
+              <div id="itemsList" class="items-list"></div>
+
+              <div class="quote-totals">
+                <div><span>الإجمالي قبل الضريبة</span><strong id="tSubtotal">0.00</strong></div>
+                <div><span>الضريبة (15%)</span><strong id="tTax">0.00</strong></div>
+                <div class="grand"><span>الإجمالي شامل الضريبة</span><strong id="tTotal">0.00</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="quote-sidebar">
+            <h2>📋 عروض الأسعار السابقة</h2>
+            <p id="loadError" class="form-error" hidden></p>
+            <ul id="quoteList" class="saved-quote-list"></ul>
+          </aside>
+
+        </div>
       </div>
 
     </div>
