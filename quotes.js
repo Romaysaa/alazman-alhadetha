@@ -19,9 +19,16 @@ const tTotal = document.getElementById("tTotal");
 const TEST_MODE = true;
 
 // Product categories and their type-specific fields, matching OfficeArt's
-// "مكتب" configurator. Add more categories here as they're defined.
+// "مكتب" configurator. "الأرجل" options are confirmed from the real system;
+// the rest are reasonable placeholder options — adjust as needed.
 const PRODUCT_CATEGORIES = {
-  "مكتب": ["السطح", "الأرجل", "الملحق", "الستارة", "أدراج"],
+  "مكتب": {
+    "السطح": ["خشب طبيعي", "خشب صناعي (MDF)", "زجاج", "لا يوجد"],
+    "الأرجل": ["معدن", "خشب", "النظام المطور", "لا يوجد"],
+    "الملحق": ["وحدة كابلات", "رف جانبي", "لا يوجد"],
+    "الستارة": ["قماش", "خشب", "لا يوجد"],
+    "أدراج": ["درج واحد", "درجان", "بدون أدراج"],
+  },
 };
 const OTHER_CATEGORY = "أخرى";
 
@@ -107,9 +114,16 @@ function renderItems() {
       ${
         item.category && PRODUCT_CATEGORIES[item.category]
           ? `<div class="item-attributes">
-              ${PRODUCT_CATEGORIES[item.category]
+              ${Object.entries(PRODUCT_CATEGORIES[item.category])
                 .map(
-                  (attr) => `<label>${escapeHtml(attr)}<input type="text" data-field="attr:${escapeAttr(attr)}" value="${escapeAttr(item.attributes[attr] || "")}" placeholder="ابحث أو اختر..."></label>`
+                  ([attr, options]) => `<label>${escapeHtml(attr)}
+                    <select data-field="attr:${escapeAttr(attr)}">
+                      <option value="">ابحث أو اختر...</option>
+                      ${options
+                        .map((opt) => `<option value="${escapeAttr(opt)}" ${item.attributes[attr] === opt ? "selected" : ""}>${escapeHtml(opt)}</option>`)
+                        .join("")}
+                    </select>
+                  </label>`
                 )
                 .join("")}
               <label class="item-notes-field">ملاحظات<textarea data-field="itemNotes" rows="2" placeholder="أدخل ملاحظات">${escapeHtml(item.itemNotes)}</textarea></label>
