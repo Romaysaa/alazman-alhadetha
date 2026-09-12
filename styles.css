@@ -342,7 +342,15 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
   align-items: end;
   margin-bottom: 12px;
 }
-.discount-toggle { flex-direction: row !important; align-items: center; gap: 8px; font-size: .85rem; }
+.item-row-fields > * { min-width: 0; }
+.discount-toggle {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: .85rem;
+  white-space: normal;
+}
 .item-total { font-size: .9rem; align-self: center; }
 .item-row-actions { display: flex; gap: 10px; }
 
