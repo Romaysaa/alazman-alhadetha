@@ -18,19 +18,36 @@ const tTotal = document.getElementById("tTotal");
 // restore the login-gate line at the bottom of this file) before real use.
 const TEST_MODE = true;
 
-// Product categories and their type-specific fields, matching OfficeArt's
-// "مكتب" configurator. "الأرجل" options are confirmed from the real system;
-// the rest are reasonable placeholder options — adjust as needed.
-const PRODUCT_CATEGORIES = {
-  "مكتب": {
-    "السطح": ["خشب طبيعي", "خشب صناعي (MDF)", "زجاج", "لا يوجد"],
-    "الأرجل": ["معدن", "خشب", "النظام المطور", "لا يوجد"],
-    "الملحق": ["وحدة كابلات", "رف جانبي", "لا يوجد"],
-    "الستارة": ["قماش", "خشب", "لا يوجد"],
-    "أدراج": ["درج واحد", "درجان", "بدون أدراج"],
-  },
+// Full product type list, confirmed from OfficeArt's real dropdown.
+const ALL_CATEGORIES = [
+  "مكتب", "وحدة أدراج", "وحدة عمل", "طاولة اجتماعات", "طاولة ضيافه",
+  "وحدة استقبال", "كاردنزا", "ديكور", "وحدة تليفزيون", "دولاب", "كنب", "كرسي",
+];
+const OTHER_CATEGORY = "آخر";
+
+// Nested field trees per category, keyed by dot-path (matching OfficeArt's
+// own customSpecs model). Fields with no confirmed `options` render as free
+// text; "الأرجل" and "الملحق" top-level options are confirmed from the real
+// system. Only "مكتب" is fully mapped so far — add more categories here as
+// they're confirmed.
+const CATEGORY_FIELDS = {
+  "مكتب": [
+    { key: "السطح", options: [], children: [
+        { key: "العرض", text: true },
+        { key: "العمق", text: true },
+        { key: "السماكه", options: [] },
+        { key: "اللون", options: [] },
+        { key: "فتحة الاسلاك", options: [] },
+      ] },
+    { key: "الأرجل", options: ["معدن", "خشب", "النظام المطور", "لا يوجد"], children: [
+        { key: "اللون", options: [] },
+        { key: "المقاس", options: [] },
+      ] },
+    { key: "الملحق", options: ["لا يوجد"] },
+    { key: "الستارة", options: [] },
+    { key: "ادراج", options: [] },
+  ],
 };
-const OTHER_CATEGORY = "أخرى";
 
 let currentItems = [];
 let editingId = null;
@@ -56,7 +73,7 @@ function effectiveType(item) {
 }
 
 function hydrateItem(rawItem) {
-  const isKnownCategory = Object.prototype.hasOwnProperty.call(PRODUCT_CATEGORIES, rawItem.type);
+  const isKnownCategory = ALL_CATEGORIES.includes(rawItem.type);
   return {
     ...rawItem,
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -87,6 +104,29 @@ function recalcTotals() {
   tTotal.textContent = fmt(total);
 }
 
+function renderFieldTree(fields, attributes, pathPrefix, depth) {
+  return fields
+    .map((field) => {
+      const path = pathPrefix + field.key;
+      const value = attributes[path] || "";
+      const indentStyle = depth ? ` style="margin-inline-start:${depth * 16}px"` : "";
+      const control = field.text
+        ? `<input type="text" data-field="attr:${escapeAttr(path)}" value="${escapeAttr(value)}" placeholder="أدخل ${escapeAttr(field.key)}">`
+        : `<select data-field="attr:${escapeAttr(path)}">
+            <option value="">ابحث أو اختر...</option>
+            ${(field.options || [])
+              .map((opt) => `<option value="${escapeAttr(opt)}" ${value === opt ? "selected" : ""}>${escapeHtml(opt)}</option>`)
+              .join("")}
+          </select>`;
+      const childrenHtml =
+        field.children && value && value !== "لا يوجد"
+          ? renderFieldTree(field.children, attributes, path + ".", depth + 1)
+          : "";
+      return `<div${indentStyle}><label>${escapeHtml(field.key)}${control}</label></div>${childrenHtml}`;
+    })
+    .join("");
+}
+
 function renderItems() {
   itemsListEl.innerHTML = "";
   currentItems.forEach((item, index) => {
@@ -98,11 +138,9 @@ function renderItems() {
         <label class="item-type">
           نوع المنتج:
           <select data-field="category">
-            <option value="">اختر النوع</option>
-            ${Object.keys(PRODUCT_CATEGORIES)
-              .map((cat) => `<option value="${escapeAttr(cat)}" ${item.category === cat ? "selected" : ""}>${escapeHtml(cat)}</option>`)
-              .join("")}
-            <option value="${OTHER_CATEGORY}" ${item.category === OTHER_CATEGORY ? "selected" : ""}>أخرى (اكتب يدوياً)</option>
+            <option value="">اختر نوع المنتج</option>
+            ${ALL_CATEGORIES.map((cat) => `<option value="${escapeAttr(cat)}" ${item.category === cat ? "selected" : ""}>${escapeHtml(cat)}</option>`).join("")}
+            <option value="${OTHER_CATEGORY}" ${item.category === OTHER_CATEGORY ? "selected" : ""}>${OTHER_CATEGORY}</option>
           </select>
         </label>
         ${
@@ -112,20 +150,9 @@ function renderItems() {
         }
       </div>
       ${
-        item.category && PRODUCT_CATEGORIES[item.category]
+        item.category && CATEGORY_FIELDS[item.category]
           ? `<div class="item-attributes">
-              ${Object.entries(PRODUCT_CATEGORIES[item.category])
-                .map(
-                  ([attr, options]) => `<label>${escapeHtml(attr)}
-                    <select data-field="attr:${escapeAttr(attr)}">
-                      <option value="">ابحث أو اختر...</option>
-                      ${options
-                        .map((opt) => `<option value="${escapeAttr(opt)}" ${item.attributes[attr] === opt ? "selected" : ""}>${escapeHtml(opt)}</option>`)
-                        .join("")}
-                    </select>
-                  </label>`
-                )
-                .join("")}
+              ${renderFieldTree(CATEGORY_FIELDS[item.category], item.attributes, "", 0)}
               <label class="item-notes-field">ملاحظات<textarea data-field="itemNotes" rows="2" placeholder="أدخل ملاحظات">${escapeHtml(item.itemNotes)}</textarea></label>
             </div>`
           : ""
@@ -172,7 +199,7 @@ function renderItems() {
         if (field === "category") {
           item.category = el.value;
           if (el.value !== OTHER_CATEGORY) item.customType = "";
-          if (!PRODUCT_CATEGORIES[el.value]) item.attributes = {};
+          item.attributes = {};
           renderItems();
           recalcTotals();
           return;
@@ -183,6 +210,9 @@ function renderItems() {
           item.itemNotes = el.value;
         } else if (field.startsWith("attr:")) {
           item.attributes[field.slice(5)] = el.value;
+          renderItems();
+          recalcTotals();
+          return;
         } else if (field === "discountEnabled") {
           item.discountEnabled = el.checked;
           renderItems();

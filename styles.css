@@ -345,6 +345,7 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
   border-radius: 10px;
   background: var(--paper);
 }
+.item-attributes > div { min-width: 0; }
 .item-attributes label { display: grid; gap: 6px; font-weight: 700; font-size: .85rem; min-width: 0; }
 .item-attributes input, .item-attributes select, .item-attributes textarea {
   font-family: inherit;
