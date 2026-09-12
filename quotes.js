@@ -109,20 +109,21 @@ function renderFieldTree(fields, attributes, pathPrefix, depth) {
     .map((field) => {
       const path = pathPrefix + field.key;
       const value = attributes[path] || "";
-      const indentStyle = depth ? ` style="margin-inline-start:${depth * 16}px"` : "";
-      const control = field.text
-        ? `<input type="text" data-field="attr:${escapeAttr(path)}" value="${escapeAttr(value)}" placeholder="أدخل ${escapeAttr(field.key)}">`
-        : `<select data-field="attr:${escapeAttr(path)}">
+      const useText = field.text || !field.options || field.options.length === 0;
+      const control = useText
+        ? `<input type="text" class="spec-input" data-field="attr:${escapeAttr(path)}" value="${escapeAttr(value)}" placeholder="أدخل ${escapeAttr(field.key)}">`
+        : `<select class="spec-input" data-field="attr:${escapeAttr(path)}">
             <option value="">ابحث أو اختر...</option>
-            ${(field.options || [])
+            ${field.options
               .map((opt) => `<option value="${escapeAttr(opt)}" ${value === opt ? "selected" : ""}>${escapeHtml(opt)}</option>`)
               .join("")}
           </select>`;
+      const row = `<div class="spec-row" style="margin-inline-start:${depth * 20}px"><label>${escapeHtml(field.key)}:</label>${control}</div>`;
       const childrenHtml =
         field.children && value && value !== "لا يوجد"
           ? renderFieldTree(field.children, attributes, path + ".", depth + 1)
           : "";
-      return `<div${indentStyle}><label>${escapeHtml(field.key)}${control}</label></div>${childrenHtml}`;
+      return row + childrenHtml;
     })
     .join("");
 }
