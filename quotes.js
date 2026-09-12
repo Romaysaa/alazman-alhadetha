@@ -29,6 +29,7 @@ function newItem() {
     unitPrice: 0,
     discountEnabled: false,
     discountAmount: 0,
+    imageUrl: null,
   };
 }
 
@@ -65,25 +66,38 @@ function renderItems() {
           <input type="text" data-field="type" value="${escapeAttr(item.type)}" placeholder="اسم المنتج">
         </label>
       </div>
-      <div class="item-row-fields">
-        <label>
-          الكمية
-          <input type="number" min="0" step="1" data-field="qty" value="${item.qty}">
-        </label>
-        <label>
-          سعر الوحدة
-          <input type="number" min="0" step="0.01" data-field="unitPrice" value="${item.unitPrice}">
-        </label>
-        <label class="discount-toggle">
-          <input type="checkbox" data-field="discountEnabled" ${item.discountEnabled ? "checked" : ""}>
-          خصم خاص على هذا البند
-        </label>
-        ${item.discountEnabled ? `<label>قيمة الخصم<input type="number" min="0" step="0.01" data-field="discountAmount" value="${item.discountAmount}"></label>` : ""}
-        <div class="item-total">الإجمالي قبل الضريبة: <strong>${fmt(itemTotal(item))}</strong></div>
-      </div>
-      <div class="item-row-actions">
-        <button type="button" class="btn btn-outline btn-sm" data-action="duplicate">نسخ المنتج</button>
-        <button type="button" class="btn btn-outline btn-sm" data-action="delete">حذف المنتج</button>
+      <div class="item-row-body">
+        <div class="item-row-main">
+          <div class="item-row-fields">
+            <label>
+              الكمية
+              <input type="number" min="0" step="1" data-field="qty" value="${item.qty}">
+            </label>
+            <label>
+              سعر الوحدة
+              <input type="number" min="0" step="0.01" data-field="unitPrice" value="${item.unitPrice}">
+            </label>
+            <label class="discount-toggle">
+              <input type="checkbox" data-field="discountEnabled" ${item.discountEnabled ? "checked" : ""}>
+              خصم خاص على هذا البند
+            </label>
+            ${item.discountEnabled ? `<label>قيمة الخصم<input type="number" min="0" step="0.01" data-field="discountAmount" value="${item.discountAmount}"></label>` : ""}
+            <div class="item-total">الإجمالي قبل الضريبة: <strong>${fmt(itemTotal(item))}</strong></div>
+          </div>
+          <div class="item-row-actions">
+            <button type="button" class="btn btn-outline btn-sm" data-action="duplicate">نسخ المنتج</button>
+            <button type="button" class="btn btn-outline btn-sm" data-action="delete">حذف المنتج</button>
+          </div>
+        </div>
+        <div class="item-image-box">
+          ${
+            item.imageUrl
+              ? `<img src="${escapeAttr(item.imageUrl)}" alt="صورة المنتج" class="item-image-preview">`
+              : `<div class="item-image-placeholder">لا توجد صورة</div>`
+          }
+          <input type="file" accept="image/*" class="item-image-input" hidden>
+          <button type="button" class="btn btn-outline btn-sm item-image-btn">+ إضافة صورة</button>
+        </div>
       </div>
     `;
 
@@ -120,6 +134,36 @@ function renderItems() {
       recalcTotals();
     });
 
+    const imageInput = row.querySelector(".item-image-input");
+    const imageBtn = row.querySelector(".item-image-btn");
+    imageBtn.addEventListener("click", () => imageInput.click());
+    imageInput.addEventListener("change", async () => {
+      const file = imageInput.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        alert("حجم الصورة كبير جداً (الحد الأقصى 2 ميجابايت)");
+        return;
+      }
+      imageBtn.textContent = "جارِ الرفع...";
+      imageBtn.disabled = true;
+      try {
+        const base64 = await fileToBase64(file);
+        const res = await authFetch("/.netlify/functions/image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: base64, contentType: file.type }),
+        });
+        if (!res.ok) throw new Error("upload failed");
+        const result = await res.json();
+        item.imageUrl = result.url;
+        renderItems();
+      } catch {
+        alert("تعذّر رفع الصورة");
+        imageBtn.textContent = "+ إضافة صورة";
+        imageBtn.disabled = false;
+      }
+    });
+
     itemsListEl.appendChild(row);
   });
 }
@@ -128,6 +172,15 @@ function escapeAttr(str) {
   const div = document.createElement("div");
   div.textContent = str || "";
   return div.innerHTML.replace(/"/g, "&quot;");
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function escapeHtml(str) {
