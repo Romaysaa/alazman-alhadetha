@@ -5,10 +5,15 @@ const quoteListEl = document.getElementById("quoteList");
 const newForm = document.getElementById("newForm");
 const loadErrorEl = document.getElementById("loadError");
 
+// TEMPORARY: TEST_MODE skips the login gate entirely so the dashboard is
+// usable while Netlify Identity email is being set up. Set to false (and
+// restore the login-gate line at the bottom of this file) before real use.
+const TEST_MODE = true;
+
 function showLoggedIn(user) {
   loggedOutEl.hidden = true;
   loggedInEl.hidden = false;
-  userEmailEl.textContent = user.email;
+  userEmailEl.textContent = user ? user.email : "وضع الاختبار (بدون تسجيل دخول)";
   loadQuotes();
 }
 
@@ -103,7 +108,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   }
 });
 
-netlifyIdentity.on("init", (user) => (user ? showLoggedIn(user) : showLoggedOut()));
+netlifyIdentity.on("init", (user) => (TEST_MODE || user ? showLoggedIn(user) : showLoggedOut()));
 netlifyIdentity.on("login", (user) => {
   showLoggedIn(user);
   netlifyIdentity.close();
