@@ -136,31 +136,26 @@ function renderItems() {
 
     const imageInput = row.querySelector(".item-image-input");
     const imageBtn = row.querySelector(".item-image-btn");
+    const imageBox = row.querySelector(".item-image-box");
+
     imageBtn.addEventListener("click", () => imageInput.click());
-    imageInput.addEventListener("change", async () => {
+    imageInput.addEventListener("change", () => {
       const file = imageInput.files[0];
-      if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        alert("حجم الصورة كبير جداً (الحد الأقصى 2 ميجابايت)");
-        return;
-      }
-      imageBtn.textContent = "جارِ الرفع...";
-      imageBtn.disabled = true;
-      try {
-        const base64 = await fileToBase64(file);
-        const res = await authFetch("/.netlify/functions/image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: base64, contentType: file.type }),
-        });
-        if (!res.ok) throw new Error("upload failed");
-        const result = await res.json();
-        item.imageUrl = result.url;
-        renderItems();
-      } catch {
-        alert("تعذّر رفع الصورة");
-        imageBtn.textContent = "+ إضافة صورة";
-        imageBtn.disabled = false;
+      if (file) uploadImageForItem(item, file, imageBtn);
+    });
+
+    imageBox.tabIndex = 0;
+    imageBox.title = "اضغط هنا ثم الصق صورة (Ctrl+V)";
+    imageBox.addEventListener("paste", (e) => {
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (const clipItem of items) {
+        if (clipItem.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = clipItem.getAsFile();
+          if (file) uploadImageForItem(item, file, imageBtn);
+          break;
+        }
       }
     });
 
@@ -172,6 +167,32 @@ function escapeAttr(str) {
   const div = document.createElement("div");
   div.textContent = str || "";
   return div.innerHTML.replace(/"/g, "&quot;");
+}
+
+async function uploadImageForItem(item, file, imageBtn) {
+  if (file.size > 2 * 1024 * 1024) {
+    alert("حجم الصورة كبير جداً (الحد الأقصى 2 ميجابايت)");
+    return;
+  }
+  const originalLabel = imageBtn.textContent;
+  imageBtn.textContent = "جارِ الرفع...";
+  imageBtn.disabled = true;
+  try {
+    const base64 = await fileToBase64(file);
+    const res = await authFetch("/.netlify/functions/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: base64, contentType: file.type || "image/png" }),
+    });
+    if (!res.ok) throw new Error("upload failed");
+    const result = await res.json();
+    item.imageUrl = result.url;
+    renderItems();
+  } catch {
+    alert("تعذّر رفع الصورة");
+    imageBtn.textContent = originalLabel;
+    imageBtn.disabled = false;
+  }
 }
 
 function fileToBase64(file) {
