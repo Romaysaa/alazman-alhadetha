@@ -89,6 +89,7 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
 .main-nav { display: flex; gap: 28px; margin-inline-end: auto; }
 .main-nav a { font-weight: 600; color: var(--ink-soft); }
 .main-nav a:hover { color: var(--gold-dark); }
+.main-nav a[aria-current="page"] { color: var(--gold-dark); }
 .nav-cta { margin-inline-start: 4px; }
 
 .menu-toggle {
@@ -162,6 +163,13 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
 .service-icon { font-size: 2rem; margin-bottom: 16px; }
 .service-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
 .service-card p { margin: 0; font-size: .95rem; }
+
+/* Page hero (sub-pages) */
+.page-hero { padding: 90px 0 40px; }
+.page-hero h1 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); max-width: 760px; margin-inline: auto; }
+.page-hero .hero-sub { max-width: 620px; margin: 0 auto; }
+.pricing-note { margin-top: 40px; color: var(--ink-soft); }
+.pricing-note a { color: var(--gold-dark); font-weight: 700; }
 
 /* Pricing */
 .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 48px; align-items: stretch; }
