@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة العروض الداخلية | الأزمان الحديثة</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body>
+
+<header class="site-header" id="top">
+  <div class="container header-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="34" height="34"><path d="M10 30V16a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="6" y="30" width="36" height="6" rx="2" fill="currentColor"/><path d="M9 36v4M39 36v4" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+      </span>
+      <span class="logo-text">الأزمان الحديثة</span>
+    </a>
+    <nav class="main-nav" id="mainNav">
+      <a href="index.html#about">من نحن</a>
+      <a href="index.html#services">خدماتنا</a>
+      <a href="pricing.html">الأسعار</a>
+      <a href="index.html#gallery">أعمالنا</a>
+      <a href="index.html#contact">تواصل معنا</a>
+    </nav>
+    <button class="menu-toggle" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="section internal">
+    <div class="container">
+
+      <div id="loggedOut" class="internal-gate">
+        <h1>لوحة العروض الداخلية</h1>
+        <p>هذه اللوحة خاصة بفريق الأزمان الحديثة. الرجاء تسجيل الدخول للمتابعة.</p>
+        <button id="loginBtn" class="btn btn-primary">تسجيل الدخول</button>
+      </div>
+
+      <div id="loggedIn" hidden>
+        <div class="internal-header">
+          <div>
+            <p class="section-label">لوحة الفريق</p>
+            <h1>عروض الأسعار</h1>
+          </div>
+          <div class="internal-actions">
+            <span id="userEmail" class="user-email"></span>
+            <button id="newBtn" class="btn btn-primary">+ جديد</button>
+            <button id="logoutBtn" class="btn btn-outline">تسجيل الخروج</button>
+          </div>
+        </div>
+
+        <div id="newForm" class="quote-form" hidden>
+          <label>
+            اسم العميل
+            <input id="fClient" type="text" placeholder="اسم العميل أو الشركة">
+          </label>
+          <label>
+            الباقة
+            <select id="fPlan">
+              <option>الباقة الأساسية</option>
+              <option>الباقة الاحترافية</option>
+              <option>باقة الشركات</option>
+            </select>
+          </label>
+          <label>
+            ملاحظات
+            <textarea id="fNotes" rows="3" placeholder="تفاصيل إضافية عن العرض"></textarea>
+          </label>
+          <div class="quote-form-actions">
+            <button id="saveBtn" class="btn btn-primary">حفظ العرض</button>
+            <button id="cancelBtn" class="btn btn-outline" type="button">إلغاء</button>
+          </div>
+        </div>
+
+        <p id="loadError" class="form-error" hidden></p>
+        <ul id="quoteList" class="quote-list"></ul>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© <span id="year"></span> الأزمان الحديثة. جميع الحقوق محفوظة.</p>
+    <div class="footer-links">
+      <a href="index.html#about">من نحن</a>
+      <a href="pricing.html">الأسعار</a>
+      <a href="index.html#contact">تواصل معنا</a>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="quotes.js"></script>
+</body>
+</html>
