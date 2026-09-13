@@ -89,13 +89,30 @@
                 <button id="addItemBtn" class="btn btn-primary btn-sm" type="button">+ إضافة منتج</button>
               </div>
 
+              <div id="deliveryFields" class="delivery-fields" hidden>
+                <label>
+                  مكان التوصيل
+                  <input id="fDeliveryLocation" type="text" placeholder="المدينة / الموقع">
+                </label>
+                <label>
+                  تكلفة التوصيل
+                  <input id="fDeliveryCost" type="number" min="0" step="0.01" value="0">
+                </label>
+              </div>
+
               <div id="itemsList" class="items-list"></div>
 
               <div class="quote-totals">
-                <div><span>الإجمالي قبل الضريبة</span><strong id="tSubtotal">0.00</strong></div>
+                <div><span>مجموع المنتجات</span><strong id="tSubtotal">0.00</strong></div>
+                <div id="tDeliveryRow" hidden><span>تكلفة التوصيل</span><strong id="tDelivery">0.00</strong></div>
                 <div><span>الضريبة (15%)</span><strong id="tTax">0.00</strong></div>
                 <div class="grand"><span>الإجمالي شامل الضريبة</span><strong id="tTotal">0.00</strong></div>
               </div>
+            </div>
+
+            <div class="editor-card">
+              <h2>شروط وأحكام <span class="optional-tag">(اختياري)</span></h2>
+              <textarea id="fTerms" rows="4" placeholder="كل سطر شرط منفصل، مثال:&#10;مدة التسليم: 15 يوم عمل من تاريخ الاعتماد&#10;طريقة الدفع: 50% مقدم و50% عند التسليم&#10;الضمان: سنة واحدة على عيوب التصنيع"></textarea>
             </div>
           </div>
 

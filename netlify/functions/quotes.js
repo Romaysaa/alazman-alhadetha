@@ -50,6 +50,9 @@ exports.handler = async (event, context) => {
     const clientName = (data.clientName || "").trim();
     const clientPhone = (data.clientPhone || "").trim();
     const deliveryOutsideRiyadh = !!data.deliveryOutsideRiyadh;
+    const deliveryLocation = deliveryOutsideRiyadh ? (data.deliveryLocation || "").trim() : "";
+    const deliveryCost = deliveryOutsideRiyadh ? Number(data.deliveryCost) || 0 : 0;
+    const terms = (data.terms || "").trim();
     const items = Array.isArray(data.items) ? data.items : [];
 
     if (!clientName) {
@@ -76,8 +79,9 @@ exports.handler = async (event, context) => {
     });
 
     const subtotal = cleanItems.reduce((sum, it) => sum + it.total, 0);
-    const tax = Math.round(subtotal * 0.15 * 100) / 100;
-    const total = Math.round((subtotal + tax) * 100) / 100;
+    const taxBase = subtotal + deliveryCost;
+    const tax = Math.round(taxBase * 0.15 * 100) / 100;
+    const total = Math.round((taxBase + tax) * 100) / 100;
 
     const quoteNumber = await nextQuoteNumber(store);
     const list = (await store.get("list", { type: "json" })) || [];
@@ -87,6 +91,9 @@ exports.handler = async (event, context) => {
       clientName,
       clientPhone,
       deliveryOutsideRiyadh,
+      deliveryLocation,
+      deliveryCost,
+      terms,
       items: cleanItems,
       subtotal,
       tax,

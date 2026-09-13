@@ -8,10 +8,20 @@ const itemsListEl = document.getElementById("itemsList");
 const fClientName = document.getElementById("fClientName");
 const fClientPhone = document.getElementById("fClientPhone");
 const fDelivery = document.getElementById("fDelivery");
+const deliveryFields = document.getElementById("deliveryFields");
+const fDeliveryLocation = document.getElementById("fDeliveryLocation");
+const fDeliveryCost = document.getElementById("fDeliveryCost");
+const fTerms = document.getElementById("fTerms");
 
 const tSubtotal = document.getElementById("tSubtotal");
+const tDeliveryRow = document.getElementById("tDeliveryRow");
+const tDelivery = document.getElementById("tDelivery");
 const tTax = document.getElementById("tTax");
 const tTotal = document.getElementById("tTotal");
+
+fDelivery.addEventListener("change", () => {
+  deliveryFields.hidden = !fDelivery.checked;
+});
 
 // TEMPORARY: TEST_MODE skips the login gate entirely so the dashboard is
 // usable while Netlify Identity email is being set up. Set to false (and
@@ -168,14 +178,24 @@ function fmt(n) {
   return (Math.round(n * 100) / 100).toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function currentDeliveryCost() {
+  return fDelivery.checked ? Number(fDeliveryCost.value) || 0 : 0;
+}
+
 function recalcTotals() {
   const subtotal = currentItems.reduce((sum, it) => sum + itemTotal(it), 0);
-  const tax = subtotal * 0.15;
-  const total = subtotal + tax;
+  const deliveryCost = currentDeliveryCost();
+  const taxBase = subtotal + deliveryCost;
+  const tax = taxBase * 0.15;
+  const total = taxBase + tax;
   tSubtotal.textContent = fmt(subtotal);
+  tDeliveryRow.hidden = deliveryCost <= 0;
+  tDelivery.textContent = fmt(deliveryCost);
   tTax.textContent = fmt(tax);
   tTotal.textContent = fmt(total);
 }
+
+fDeliveryCost.addEventListener("input", recalcTotals);
 
 function renderFieldTree(fields, attributes, pathPrefix, depth) {
   return fields
@@ -388,6 +408,10 @@ function resetForm() {
   fClientName.value = "";
   fClientPhone.value = "";
   fDelivery.checked = false;
+  deliveryFields.hidden = true;
+  fDeliveryLocation.value = "";
+  fDeliveryCost.value = "0";
+  fTerms.value = "";
   currentItems = [newItem()];
   renderItems();
   recalcTotals();
@@ -444,8 +468,15 @@ function buildPreviewHtml() {
     .join("");
 
   const subtotal = currentItems.reduce((sum, it) => sum + itemTotal(it), 0);
-  const tax = subtotal * 0.15;
-  const total = subtotal + tax;
+  const deliveryCost = currentDeliveryCost();
+  const taxBase = subtotal + deliveryCost;
+  const tax = taxBase * 0.15;
+  const total = taxBase + tax;
+
+  const termsLines = fTerms.value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   return `
     <div class="quote-pdf-header">
@@ -476,10 +507,23 @@ function buildPreviewHtml() {
 
     <div class="pricing-summary">
       <div class="summary-row"><span>المجموع:</span><span class="amount">${fmt(subtotal)} ريال</span></div>
+      ${
+        deliveryCost > 0
+          ? `<div class="summary-row"><span>قيمة التوصيل خارج الرياض${fDeliveryLocation.value.trim() ? ` (${escapeHtml(fDeliveryLocation.value.trim())})` : ""}:</span><span class="amount">${fmt(deliveryCost)} ريال</span></div>`
+          : ""
+      }
       <div class="summary-row"><span>ضريبة القيمة المضافة (15%):</span><span class="amount">${fmt(tax)} ريال</span></div>
       <div class="summary-row total"><span>المجموع الكلي:</span><span class="amount">${fmt(total)} ريال</span></div>
     </div>
-    ${fDelivery.checked ? `<p class="preview-note">* يشمل توصيل خارج الرياض (تُحدَّد تكلفة التوصيل بشكل منفصل)</p>` : ""}
+
+    ${
+      termsLines.length
+        ? `<div class="terms-section">
+            <h3 class="section-title">شروط وأحكام</h3>
+            <ul class="terms-list">${termsLines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+          </div>`
+        : ""
+    }
   `;
 }
 
@@ -528,6 +572,10 @@ function renderSavedQuotes(list) {
       fClientName.value = q.clientName;
       fClientPhone.value = q.clientPhone || "";
       fDelivery.checked = !!q.deliveryOutsideRiyadh;
+      deliveryFields.hidden = !fDelivery.checked;
+      fDeliveryLocation.value = q.deliveryLocation || "";
+      fDeliveryCost.value = q.deliveryCost || 0;
+      fTerms.value = q.terms || "";
       currentItems = q.items.map(hydrateItem);
       renderItems();
       recalcTotals();
@@ -583,6 +631,9 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
         clientName,
         clientPhone: fClientPhone.value.trim(),
         deliveryOutsideRiyadh: fDelivery.checked,
+        deliveryLocation: fDelivery.checked ? fDeliveryLocation.value.trim() : "",
+        deliveryCost: currentDeliveryCost(),
+        terms: fTerms.value.trim(),
         items: payloadItems,
       }),
     });
