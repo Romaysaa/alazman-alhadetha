@@ -18,36 +18,113 @@ const tTotal = document.getElementById("tTotal");
 // restore the login-gate line at the bottom of this file) before real use.
 const TEST_MODE = true;
 
-// Full product type list, confirmed from OfficeArt's real dropdown.
-const ALL_CATEGORIES = [
-  "مكتب", "وحدة أدراج", "وحدة عمل", "طاولة اجتماعات", "طاولة ضيافه",
-  "وحدة استقبال", "كاردنزا", "ديكور", "وحدة تليفزيون", "دولاب", "كنب", "كرسي",
-];
-const OTHER_CATEGORY = "آخر";
+// Shared laminate/veneer color catalog (143 real supplier codes, confirmed
+// from the live OfficeArt bundle). NOTE: these are OfficeArt's own supplier
+// codes — الأزمان الحديثة will want to swap this for its real suppliers' codes.
+const LAMINATE_COLORS = ["آخر","Art_125","Art_126","Art_140","Art_178","Art_191","Art_197","Art_210","Art_212","Art_213","Art_219","Art_223","Art_226","Art_228","Art_279","Art_300","Art_301","Art_302","Art_303","Art_305","Art_306","Art_308","Art_309","Art_312","Art_317","Art_319","Art_324","Art_327","Art_401","Art_416","Art_417","Art_440","Art_455","Art_466","Art_477","Art_515","Art_551","Art_552","Art_553","Art_554","Art_556","Art_557","Art_558","Art_559","Art_562","Art_564","Art_625","Art_653","Art_660","Art_690","Art_693","Art_710","Art_715","Art_720","Art_725","Art_730","Art_735","Art_740","Art_750","Art_775","Art_790","Art_795","Art_797","Art_799","Art_821","Art_833","Art_837","Art_835","Art_840","Art_874","Art_876","Art_904","Art_910","Art_911","Art_916","Art_922","Art_1600 Pluse","Art_1601 Pluse","Art_1602 Pluse","Art_1603 Pluse","Art_1604 Pluse","Art_1605 Pluse","Art_1606 Pluse","Art_1607 Pluse","Art_1608 Pluse","Art_1609 Pluse","Art_1610 Pluse","Art_1611 Pluse","Art_1612 Pluse","Art_1613 Pluse","Art_1614 Pluse","Art_1615 Pluse","Art_1616 Pluse","Art_1617 Pluse","Art_1618 Pluse","Art_1619 Pluse","MPT_0006","MPT_0202","MPT_1101","MPT_1112","MPT_1115","MPT_1230","MPT_1236","MPT_1239","MPT_1240","MPT_2003","MPT_2131","MPT_2277","MPT_2344","MPT_2359","MPT_2407","MPT_2416","MPT_2417","MPT_2575","MPT_2615","MPT_2729","MPT_3011","MPT_3030","MPT_3622","MPT_3624","MPT_3910","MPT_4104","MPT_4131","MPT_4132","MPT_4133","MPT_4503","MPT_4900","MPT_5013","MPT_5023","MPT_5039","MPT_5400","MPT_5412","MPT_5700","MPT_5701","MPT_5800","MPT_6057","MPT_7500","MPT_8393","MPT_8538","MPT_9027","MPT_9103","MPT_9301","MPT_9512"];
+function colorField(key) {
+  return { key, options: LAMINATE_COLORS };
+}
 
-// Nested field trees per category, keyed by dot-path (matching OfficeArt's
-// own customSpecs model). "معدن/خشب/النظام المطور/لا يوجد" (الأرجل), "لا يوجد"
-// (الملحق), and "1 لون" (السطح) are confirmed real values from the actual
-// system; every other option list below is a reasonable placeholder — replace
-// with the real lists once confirmed. Only "مكتب" is fully mapped so far.
+const OPEN_METHOD_OPTIONS = ["ضغط", "جروف", "مسكه اسود", "مسكه سيلفر"];
+const LOCK_OPTIONS = ["نعم", "لا"];
+const GROMMET_OPTIONS = ["اسود دائريه", "سيلفر دائريه", "ابيض دائريه", "اسود مربعه 8*8", "اسود مستطيله 16*8", "اسود مستطيله 28*8", "سيلفر مربعه 8*8", "سيلفر مستطيله 16*8", "سيلفر مستطيله 28*8", "ابيض مربعه 8*8", "ابيض مستطيله 16*8", "ابيض مستطيله 28*8"];
+const METAL_LEG_COLORS = ["ابيض 9003", "اسود 9005", "1013 بيج", "7040 رصاصي فاتح", "7043 رصاصي غامق"];
+const LEG_SIZES = ["3*3", "4*4", "3*6", "5*5"];
+const DEVELOPED_LEG_COLORS = ["ابيض", "اسود", "رصاصي فاتح", "رصاصي غامق"];
+const THICKNESS_OPTIONS = ["25", "34", "36", "50"];
+
+function legsField() {
+  return {
+    key: "الأرجل",
+    options: ["معدن", "خشب", "النظام المطور", "لا يوجد"],
+    optionChildren: {
+      "معدن": [{ key: "اللون", options: METAL_LEG_COLORS }, { key: "المقاس", options: LEG_SIZES }],
+      "خشب": [colorField("اللون")],
+      "النظام المطور": [{ key: "اللون", options: DEVELOPED_LEG_COLORS }],
+    },
+  };
+}
+
+function drawersField() {
+  return {
+    key: "ادراج",
+    options: ["ثابته", "متحركه", "لا يوجد"],
+    children: [{ key: "طريقة الفتح", options: OPEN_METHOD_OPTIONS }, { key: "قفل", options: LOCK_OPTIONS }],
+  };
+}
+
+// Full product type list and their nested field trees — confirmed from the
+// live OfficeArt JS bundle (fetched directly from its public assets). Field
+// names, option values and nesting are exact; per-option price add-ons and
+// the surface-area pricing formulas that exist in the real system are NOT
+// replicated here (too easy to get subtly wrong) — adjust "سعر الوحدة"
+// manually to account for premium options for now.
 const CATEGORY_FIELDS = {
   "مكتب": [
-    { key: "السطح", options: ["1 لون", "خشب طبيعي", "زجاج", "لا يوجد"], children: [
-        { key: "العرض", text: true },
-        { key: "العمق", text: true },
-        { key: "السماكه", options: ["2 سم", "3 سم", "4 سم"] },
-        { key: "اللون", options: ["أبيض", "أسود", "بني", "رمادي", "بيج"] },
-        { key: "فتحة الاسلاك", options: ["يوجد", "لا يوجد"] },
-      ] },
-    { key: "الأرجل", options: ["معدن", "خشب", "النظام المطور", "لا يوجد"], children: [
-        { key: "اللون", options: ["أسود", "فضي", "أبيض", "بني"] },
-        { key: "المقاس", options: ["70 سم", "72 سم", "75 سم"] },
-      ] },
-    { key: "الملحق", options: ["وحدة كهرباء", "وحدة كابلات", "لا يوجد"] },
-    { key: "الستارة", options: ["قماش", "خشب", "لا يوجد"] },
-    { key: "ادراج", options: ["لا يوجد", "درج واحد", "درجان", "ثلاثة أدراج"] },
+    { key: "السطح", options: ["1 لون", "2 لون", "لا يوجد"], optionChildren: {
+        "1 لون": [{ key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("اللون"), { key: "فتحة الاسلاك", options: GROMMET_OPTIONS }],
+        "2 لون": [{ key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("لون 1"), colorField("لون 2"), { key: "فتحة الاسلاك", options: GROMMET_OPTIONS }],
+      } },
+    legsField(),
+    { key: "الملحق", options: ["صغير", "كبير", "لا يوجد"], optionChildren: {
+        "صغير": [{ key: "الطول", text: true }, { key: "العمق", text: true }, { key: "الاتجاه", options: ["يمين", "يسار"] }, colorField("اللون")],
+        "كبير": [{ key: "الطول", text: true }, { key: "العمق", text: true }, { key: "الاتجاه", options: ["يمين", "يسار"] }, colorField("لون الجسم"), colorField("لون الابواب"), { key: "ابواب", options: ["سحاب خشب", "سحاب زجاج", "مفصلي"] }, { key: "طريقة الفتح", options: OPEN_METHOD_OPTIONS }],
+      } },
+    { key: "الستارة", options: ["خشب ساده", "خشب موديل", "لا يوجد"], optionChildren: {
+        "خشب ساده": [{ key: "الحجم", options: ["صغيره", "كامله"] }, colorField("اللون")],
+        "خشب موديل": [colorField("لون 1"), colorField("لون 2"), { key: "كامل", options: ["بدون اضاءه", "باضاءه"] }],
+      } },
+    drawersField(),
   ],
+  "وحدة أدراج": [
+    { key: "النوع", options: ["ثابته", "متحركه"] },
+    { key: "طريقة الفتح", options: OPEN_METHOD_OPTIONS },
+    colorField("لون الجسم"),
+    colorField("لون الاوجه"),
+    { key: "قفل", options: LOCK_OPTIONS },
+  ],
+  "وحدة عمل": [
+    { key: "السطح", options: ["1 لون", "2 لون", "لا يوجد"], optionChildren: {
+        "1 لون": [{ key: "الشكل", options: ["مستطيل", "شكل Y", "شكل ✚", "اخري"] }, { key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("اللون"), { key: "فتحة الاسلاك", options: GROMMET_OPTIONS }],
+        "2 لون": [{ key: "الشكل", options: ["مستطيل", "شكل Y", "شكل ✚", "اخري"] }, { key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("لون 1"), colorField("لون 2"), { key: "فتحة الاسلاك", options: GROMMET_OPTIONS }],
+      } },
+    legsField(),
+    { key: "الحاجز", options: ["خشب", "قماش", "زجاج", "زجاج مع لوجو", "لا يوجد"], children: [{ key: "الأرتفاع", text: true }] },
+    drawersField(),
+  ],
+  "طاولة اجتماعات": [
+    { key: "السطح", options: ["1 لون", "2 لون", "لا يوجد"], optionChildren: {
+        "1 لون": [{ key: "الشكل", options: ["مستطيل", "دائريه", "شكل U", "اخري"] }, { key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("اللون"), { key: "فتحة الاسلاك", options: GROMMET_OPTIONS }],
+        "2 لون": [{ key: "الشكل", options: ["مستطيل", "شكل Y", "شكل ✚", "اخري"] }, { key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("لون 1"), colorField("لون 2"), { key: "فتحة الاسلاك", options: GROMMET_OPTIONS }],
+      } },
+    legsField(),
+  ],
+  "طاولة ضيافه": [
+    { key: "السطح", options: ["1 لون", "2 لون", "لا يوجد"], optionChildren: {
+        "1 لون": [{ key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("اللون")],
+        "2 لون": [{ key: "العرض", text: true }, { key: "العمق", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("لون 1"), colorField("لون 2")],
+      } },
+    legsField(),
+  ],
+  "وحدة استقبال": [
+    { key: "السطح", options: ["1 لون", "2 لون", "لا يوجد"], optionChildren: {
+        "1 لون": [{ key: "العرض", text: true }, { key: "العمق", text: true }, { key: "الارتفاع", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("اللون")],
+        "2 لون": [{ key: "العرض", text: true }, { key: "العمق", text: true }, { key: "الارتفاع", text: true }, { key: "السماكه", options: THICKNESS_OPTIONS }, colorField("لون 1"), colorField("لون 2")],
+      } },
+    drawersField(),
+    { key: "اضاءه", options: LOCK_OPTIONS },
+  ],
+  "كاردنزا": [{ key: "المواصفات", text: true }],
+  "ديكور": [{ key: "المواصفات", text: true }],
+  "وحدة تليفزيون": [{ key: "المواصفات", text: true }],
+  "دولاب": [{ key: "المواصفات", text: true }],
+  "كنب": [{ key: "المواصفات", text: true }],
+  "كرسي": [{ key: "كود الكرسي", text: true }, { key: "المواصفات", text: true }],
+  "آخر": [{ key: "اسم المنتج", text: true }, { key: "المواصفات", text: true }],
 };
+
+const ALL_CATEGORIES = Object.keys(CATEGORY_FIELDS);
 
 let currentItems = [];
 let editingId = null;
@@ -56,7 +133,6 @@ function newItem() {
   return {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     category: "",
-    customType: "",
     attributes: {},
     itemNotes: "",
     qty: 1,
@@ -68,17 +144,14 @@ function newItem() {
 }
 
 function effectiveType(item) {
-  if (item.category === OTHER_CATEGORY) return (item.customType || "").trim();
   return item.category || "";
 }
 
 function hydrateItem(rawItem) {
-  const isKnownCategory = ALL_CATEGORIES.includes(rawItem.type);
   return {
     ...rawItem,
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    category: isKnownCategory ? rawItem.type : rawItem.type ? OTHER_CATEGORY : "",
-    customType: isKnownCategory ? "" : rawItem.type || "",
+    category: rawItem.type || "",
     attributes: rawItem.attributes || {},
     itemNotes: rawItem.itemNotes || "",
   };
@@ -119,9 +192,10 @@ function renderFieldTree(fields, attributes, pathPrefix, depth) {
               .join("")}
           </select>`;
       const row = `<div class="spec-row" style="margin-inline-start:${depth * 20}px"><label>${escapeHtml(field.key)}:</label>${control}</div>`;
+      const childFields = (field.optionChildren && field.optionChildren[value]) || field.children;
       const childrenHtml =
-        field.children && value && value !== "لا يوجد"
-          ? renderFieldTree(field.children, attributes, path + ".", depth + 1)
+        childFields && value && value !== "لا يوجد"
+          ? renderFieldTree(childFields, attributes, path + ".", depth + 1)
           : "";
       return row + childrenHtml;
     })
@@ -141,14 +215,8 @@ function renderItems() {
           <select data-field="category">
             <option value="">اختر نوع المنتج</option>
             ${ALL_CATEGORIES.map((cat) => `<option value="${escapeAttr(cat)}" ${item.category === cat ? "selected" : ""}>${escapeHtml(cat)}</option>`).join("")}
-            <option value="${OTHER_CATEGORY}" ${item.category === OTHER_CATEGORY ? "selected" : ""}>${OTHER_CATEGORY}</option>
           </select>
         </label>
-        ${
-          item.category === OTHER_CATEGORY
-            ? `<input type="text" data-field="customType" value="${escapeAttr(item.customType)}" placeholder="اسم المنتج" class="item-custom-type">`
-            : ""
-        }
       </div>
       ${
         item.category && CATEGORY_FIELDS[item.category]
@@ -199,15 +267,12 @@ function renderItems() {
         const field = el.dataset.field;
         if (field === "category") {
           item.category = el.value;
-          if (el.value !== OTHER_CATEGORY) item.customType = "";
           item.attributes = {};
           renderItems();
           recalcTotals();
           return;
         }
-        if (field === "customType") {
-          item.customType = el.value;
-        } else if (field === "itemNotes") {
+        if (field === "itemNotes") {
           item.itemNotes = el.value;
         } else if (field.startsWith("attr:")) {
           item.attributes[field.slice(5)] = el.value;

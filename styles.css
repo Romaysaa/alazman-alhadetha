@@ -333,7 +333,6 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
   flex-shrink: 0;
 }
 .item-type { flex: 1; }
-.item-custom-type { flex: 1; }
 
 .item-attributes {
   display: flex;
