@@ -26,26 +26,26 @@ const ALL_CATEGORIES = [
 const OTHER_CATEGORY = "آخر";
 
 // Nested field trees per category, keyed by dot-path (matching OfficeArt's
-// own customSpecs model). Fields with no confirmed `options` render as free
-// text; "الأرجل" and "الملحق" top-level options are confirmed from the real
-// system. Only "مكتب" is fully mapped so far — add more categories here as
-// they're confirmed.
+// own customSpecs model). "معدن/خشب/النظام المطور/لا يوجد" (الأرجل), "لا يوجد"
+// (الملحق), and "1 لون" (السطح) are confirmed real values from the actual
+// system; every other option list below is a reasonable placeholder — replace
+// with the real lists once confirmed. Only "مكتب" is fully mapped so far.
 const CATEGORY_FIELDS = {
   "مكتب": [
-    { key: "السطح", options: [], children: [
+    { key: "السطح", options: ["1 لون", "خشب طبيعي", "زجاج", "لا يوجد"], children: [
         { key: "العرض", text: true },
         { key: "العمق", text: true },
-        { key: "السماكه", options: [] },
-        { key: "اللون", options: [] },
-        { key: "فتحة الاسلاك", options: [] },
+        { key: "السماكه", options: ["2 سم", "3 سم", "4 سم"] },
+        { key: "اللون", options: ["أبيض", "أسود", "بني", "رمادي", "بيج"] },
+        { key: "فتحة الاسلاك", options: ["يوجد", "لا يوجد"] },
       ] },
     { key: "الأرجل", options: ["معدن", "خشب", "النظام المطور", "لا يوجد"], children: [
-        { key: "اللون", options: [] },
-        { key: "المقاس", options: [] },
+        { key: "اللون", options: ["أسود", "فضي", "أبيض", "بني"] },
+        { key: "المقاس", options: ["70 سم", "72 سم", "75 سم"] },
       ] },
-    { key: "الملحق", options: ["لا يوجد"] },
-    { key: "الستارة", options: [] },
-    { key: "ادراج", options: [] },
+    { key: "الملحق", options: ["وحدة كهرباء", "وحدة كابلات", "لا يوجد"] },
+    { key: "الستارة", options: ["قماش", "خشب", "لا يوجد"] },
+    { key: "ادراج", options: ["لا يوجد", "درج واحد", "درجان", "ثلاثة أدراج"] },
   ],
 };
 
