@@ -335,7 +335,8 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
   color: var(--ink);
 }
 .optional-tag { font-weight: 400; font-size: .8rem; color: var(--ink-soft); }
-#fTerms {
+#fTerms,
+#fAdditionalClauses {
   width: 100%;
   font-family: inherit;
   font-size: .95rem;
@@ -345,6 +346,20 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
   background: var(--paper);
   color: var(--ink);
   resize: vertical;
+}
+.section-note {
+  font-weight: 700;
+  font-size: .85rem;
+  color: var(--gold-dark);
+  margin: 20px 0 10px;
+}
+.section-note:first-of-type { margin-top: 0; }
+.full-width-label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+  font-size: .9rem;
+  margin-top: 16px;
 }
 
 .items-list { display: grid; gap: 16px; margin-bottom: 20px; }
@@ -591,6 +606,16 @@ p { margin: 0 0 16px; color: var(--ink-soft); }
 .summary-row.total { font-weight: 800; font-size: 1.1rem; border-top: 2px solid var(--gold); padding-top: 8px; }
 
 .terms-section { margin-top: 28px; }
+.quote-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.quote-footer .pricing-summary { max-width: 260px; margin-inline-start: 0; }
 .section-title { font-size: 1rem; color: var(--ink); margin-bottom: 10px; }
 .terms-list { padding-inline-start: 20px; margin: 0; font-size: .9rem; color: var(--ink-soft); }
 .terms-list li { margin-bottom: 4px; }

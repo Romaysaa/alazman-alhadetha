@@ -53,6 +53,9 @@ exports.handler = async (event, context) => {
     const deliveryLocation = deliveryOutsideRiyadh ? (data.deliveryLocation || "").trim() : "";
     const deliveryCost = deliveryOutsideRiyadh ? Number(data.deliveryCost) || 0 : 0;
     const terms = (data.terms || "").trim();
+    const bankDetails = data.bankDetails && typeof data.bankDetails === "object" ? data.bankDetails : {};
+    const salesRep = data.salesRep && typeof data.salesRep === "object" ? data.salesRep : {};
+    const contractDetails = data.contractDetails && typeof data.contractDetails === "object" ? data.contractDetails : {};
     const items = Array.isArray(data.items) ? data.items : [];
 
     if (!clientName) {
@@ -94,6 +97,9 @@ exports.handler = async (event, context) => {
       deliveryLocation,
       deliveryCost,
       terms,
+      bankDetails,
+      salesRep,
+      contractDetails,
       items: cleanItems,
       subtotal,
       tax,

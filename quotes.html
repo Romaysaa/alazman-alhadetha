@@ -62,6 +62,8 @@
             <div class="editor-toolbar">
               <button id="saveBtn" class="btn btn-primary">💾 حفظ العرض</button>
               <button id="previewBtn" class="btn btn-outline" type="button">👁 معاينة العرض</button>
+              <button id="contractBtn" class="btn btn-outline" type="button">📄 عقد اتفاق</button>
+              <button id="deliveryReportBtn" class="btn btn-outline" type="button">📋 محضر تسليم</button>
               <button id="newBtn" class="btn btn-outline" type="button">جديد</button>
             </div>
 
@@ -112,7 +114,50 @@
 
             <div class="editor-card">
               <h2>شروط وأحكام <span class="optional-tag">(اختياري)</span></h2>
-              <textarea id="fTerms" rows="4" placeholder="كل سطر شرط منفصل، مثال:&#10;مدة التسليم: 15 يوم عمل من تاريخ الاعتماد&#10;طريقة الدفع: 50% مقدم و50% عند التسليم&#10;الضمان: سنة واحدة على عيوب التصنيع"></textarea>
+              <textarea id="fTerms" rows="4" placeholder="اتركه فارغاً لاستخدام الشروط الافتراضية، أو اكتب شروطك الخاصة (كل سطر شرط منفصل)"></textarea>
+            </div>
+
+            <div class="editor-card">
+              <h2>بيانات الحساب البنكي وممثل المبيعات <span class="optional-tag">(اختياري)</span></h2>
+              <div class="client-fields">
+                <label>اسم البنك<input id="fBankName" type="text" placeholder="مثال: مصرف الراجحي"></label>
+                <label>اسم الحساب<input id="fBankAccountName" type="text" placeholder="اسم الشركة كما هو مسجل لدى البنك"></label>
+                <label>رقم الحساب<input id="fBankAccountNumber" type="text" placeholder="رقم الحساب"></label>
+                <label>رقم الآيبان<input id="fBankIban" type="text" placeholder="SA..."></label>
+                <label>اسم مندوب المبيعات<input id="fSalesRepName" type="text" placeholder="اسم المندوب"></label>
+                <label>جوال المندوب<input id="fSalesRepPhone" type="tel" placeholder="رقم الجوال"></label>
+              </div>
+            </div>
+
+            <div class="editor-card">
+              <h2>بيانات عقد الاتفاق <span class="optional-tag">(اختياري — تُستخدم عند تصدير "عقد اتفاق")</span></h2>
+              <p class="section-note">الطرف الأول (شركتكم)</p>
+              <div class="client-fields">
+                <label>اسم الشركة<input id="fCompanyName" type="text" placeholder="الأزمان الحديثة"></label>
+                <label>السجل التجاري<input id="fCompanyCR" type="text" placeholder="رقم السجل التجاري"></label>
+                <label>العنوان<input id="fCompanyAddress" type="text" placeholder="المدينة – الحي"></label>
+                <label>اسم الممثل<input id="fCompanyRepName" type="text" placeholder="اسم المفوّض بالتوقيع"></label>
+                <label>رقم هوية الممثل<input id="fCompanyRepId" type="text" placeholder="رقم الهوية"></label>
+                <label>هاتف الشركة<input id="fCompanyPhone" type="tel" placeholder="رقم التواصل"></label>
+                <label>البريد الإلكتروني<input id="fCompanyEmail" type="email" placeholder="info@..."></label>
+              </div>
+              <p class="section-note">الطرف الثاني (العميل) — بيانات إضافية</p>
+              <div class="client-fields">
+                <label>السجل التجاري للعميل<input id="fClientCR" type="text" placeholder="إن وجد"></label>
+                <label>عنوان العميل<input id="fClientAddress" type="text" placeholder="المقر"></label>
+                <label>اسم ممثل العميل<input id="fClientRepName" type="text" placeholder="افتراضياً: اسم العميل"></label>
+                <label>رقم هوية ممثل العميل<input id="fClientRepId" type="text" placeholder="رقم الهوية"></label>
+                <label>البريد الإلكتروني للعميل<input id="fClientEmail" type="email" placeholder="email@..."></label>
+              </div>
+              <p class="section-note">شروط العقد</p>
+              <div class="client-fields">
+                <label>طريقة الدفع<input id="fPaymentMethod" type="text" placeholder="مثال: 100% عند التعميد"></label>
+                <label>مدة الضمان (سنوات)<input id="fWarrantyYears" type="number" min="0" step="1" placeholder="3"></label>
+              </div>
+              <label class="full-width-label">
+                بنود إضافية (اختياري، كل سطر بند منفصل)
+                <textarea id="fAdditionalClauses" rows="3" placeholder="اكتب أي بنود إضافية خاصة بهذا العقد"></textarea>
+              </label>
             </div>
           </div>
 

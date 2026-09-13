@@ -12,6 +12,34 @@ const deliveryFields = document.getElementById("deliveryFields");
 const fDeliveryLocation = document.getElementById("fDeliveryLocation");
 const fDeliveryCost = document.getElementById("fDeliveryCost");
 const fTerms = document.getElementById("fTerms");
+const fBankName = document.getElementById("fBankName");
+const fBankAccountName = document.getElementById("fBankAccountName");
+const fBankAccountNumber = document.getElementById("fBankAccountNumber");
+const fBankIban = document.getElementById("fBankIban");
+const fSalesRepName = document.getElementById("fSalesRepName");
+const fSalesRepPhone = document.getElementById("fSalesRepPhone");
+const fCompanyName = document.getElementById("fCompanyName");
+const fCompanyCR = document.getElementById("fCompanyCR");
+const fCompanyAddress = document.getElementById("fCompanyAddress");
+const fCompanyRepName = document.getElementById("fCompanyRepName");
+const fCompanyRepId = document.getElementById("fCompanyRepId");
+const fCompanyPhone = document.getElementById("fCompanyPhone");
+const fCompanyEmail = document.getElementById("fCompanyEmail");
+const fClientCR = document.getElementById("fClientCR");
+const fClientAddress = document.getElementById("fClientAddress");
+const fClientRepName = document.getElementById("fClientRepName");
+const fClientRepId = document.getElementById("fClientRepId");
+const fClientEmail = document.getElementById("fClientEmail");
+const fPaymentMethod = document.getElementById("fPaymentMethod");
+const fWarrantyYears = document.getElementById("fWarrantyYears");
+const fAdditionalClauses = document.getElementById("fAdditionalClauses");
+
+const DEFAULT_TERMS = [
+  "مدة التسليم: خلال 12 يوم عمل من تاريخ تعميد المواصفات والألوان والدفع",
+  "طريقة الدفع: 100% عند التعميد",
+  "مدة الضمان: ثلاث سنوات على عيوب التصنيع",
+  "جاهزية الموقع مسؤولية العميل",
+];
 
 const tSubtotal = document.getElementById("tSubtotal");
 const tDeliveryRow = document.getElementById("tDeliveryRow");
@@ -412,6 +440,27 @@ function resetForm() {
   fDeliveryLocation.value = "";
   fDeliveryCost.value = "0";
   fTerms.value = "";
+  fBankName.value = "";
+  fBankAccountName.value = "";
+  fBankAccountNumber.value = "";
+  fBankIban.value = "";
+  fSalesRepName.value = "";
+  fSalesRepPhone.value = "";
+  fCompanyName.value = "";
+  fCompanyCR.value = "";
+  fCompanyAddress.value = "";
+  fCompanyRepName.value = "";
+  fCompanyRepId.value = "";
+  fCompanyPhone.value = "";
+  fCompanyEmail.value = "";
+  fClientCR.value = "";
+  fClientAddress.value = "";
+  fClientRepName.value = "";
+  fClientRepId.value = "";
+  fClientEmail.value = "";
+  fPaymentMethod.value = "";
+  fWarrantyYears.value = "";
+  fAdditionalClauses.value = "";
   currentItems = [newItem()];
   renderItems();
   recalcTotals();
@@ -473,10 +522,20 @@ function buildPreviewHtml() {
   const tax = taxBase * 0.15;
   const total = taxBase + tax;
 
-  const termsLines = fTerms.value
+  const customTermsLines = fTerms.value
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+  const termsLines = customTermsLines.length ? customTermsLines : DEFAULT_TERMS;
+
+  const bankRows = [
+    ["اسم البنك", fBankName.value.trim()],
+    ["إسم الحساب", fBankAccountName.value.trim()],
+    ["رقم الحساب", fBankAccountNumber.value.trim()],
+    ["رقم الآيبان", fBankIban.value.trim()],
+  ].filter(([, value]) => value);
+  const salesRepName = fSalesRepName.value.trim();
+  const salesRepPhone = fSalesRepPhone.value.trim();
 
   return `
     <div class="quote-pdf-header">
@@ -524,12 +583,205 @@ function buildPreviewHtml() {
           </div>`
         : ""
     }
+
+    ${
+      bankRows.length || salesRepName || salesRepPhone
+        ? `<div class="quote-footer">
+            ${
+              bankRows.length
+                ? `<div class="terms-section">
+                    <h3 class="section-title">تفاصيل الحساب البنكي</h3>
+                    <ul class="terms-list">${bankRows.map(([label, value]) => `<li>${escapeHtml(label)}: ${escapeHtml(value)}</li>`).join("")}</ul>
+                  </div>`
+                : ""
+            }
+            ${
+              salesRepName || salesRepPhone
+                ? `<div class="pricing-summary">
+                    ${salesRepName ? `<div class="summary-row"><span>ممثل المبيعات:</span><span class="amount">${escapeHtml(salesRepName)}</span></div>` : ""}
+                    ${salesRepPhone ? `<div class="summary-row"><span>الجوال:</span><span class="amount">${escapeHtml(salesRepPhone)}</span></div>` : ""}
+                  </div>`
+                : ""
+            }
+          </div>`
+        : ""
+    }
   `;
 }
 
-document.getElementById("previewBtn").addEventListener("click", () => {
-  document.getElementById("previewDoc").innerHTML = buildPreviewHtml();
+function buildDeliveryReportHtml() {
+  const rows = currentItems
+    .map((item, idx) => {
+      const specFields = CATEGORY_FIELDS[item.category];
+      const specsHtml = `
+        <div class="spec-group"><span class="main-spec" style="font-size:14px;font-weight:bold;">نوع المنتج: ${escapeHtml(effectiveType(item) || "؟؟؟؟")}</span></div>
+        ${specFields ? formatItemSpecsHtml(specFields, item.attributes, "") : ""}
+      `;
+      return `<tr>
+        <td class="text-center">${idx + 1}</td>
+        <td class="specs-cell">${specsHtml}</td>
+        <td class="text-center">${item.qty}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+    <div class="quote-pdf-header">
+      <div class="pdf-header-top1">
+        <div class="pdf-logo-box">
+          <svg viewBox="0 0 48 48" width="40" height="40"><path d="M10 30V16a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="6" y="30" width="36" height="6" rx="2" fill="currentColor"/><path d="M9 36v4M39 36v4" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="pdf-main-title">محضر تسليم — الأزمان الحديثة</div>
+      </div>
+      <div class="pdf-header-top2">
+        <div class="pdf-client-box">
+          <p class="pdf-intro-text">العميل: ${escapeHtml(fClientName.value.trim() || "-")}</p>
+        </div>
+        <div class="pdf-date-box">
+          <span>التاريخ: </span><span>${new Date().toLocaleDateString("en-GB")}</span><br>
+          <span>موقع التسليم: </span><span>${escapeHtml(fDeliveryLocation.value.trim() || "-")}</span>
+        </div>
+      </div>
+    </div>
+
+    <table class="products-table">
+      <thead><tr><th>م</th><th>البيان</th><th>الكمية</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="3" class="text-center">لا توجد منتجات</td></tr>`}</tbody>
+    </table>
+
+    <p class="preview-note">البضاعة المذكورة أعلاه كاملة وبحالة ممتازة، وتمت مراجعتها وفحصها بدقة من قِبل العميل المستلم، وعليها جرى التوقيع.</p>
+    <p class="preview-note">ملاحظات العميل: ....................................................................</p>
+
+    <div class="quote-footer">
+      <div class="pricing-summary">
+        <h3 class="section-title">توقيع مستلم البضاعة (العميل)</h3>
+        <div class="summary-row"><span>الاسم:</span><span class="amount">....................</span></div>
+        <div class="summary-row"><span>التوقيع:</span><span class="amount">....................</span></div>
+      </div>
+      <div class="pricing-summary">
+        <h3 class="section-title">توقيع مسؤول التركيبات</h3>
+        <div class="summary-row"><span>الاسم:</span><span class="amount">....................</span></div>
+        <div class="summary-row"><span>التوقيع:</span><span class="amount">....................</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function buildContractHtml() {
+  const dots = "....................";
+  const today = new Date().toLocaleDateString("en-GB");
+  const companyName = fCompanyName.value.trim() || "الأزمان الحديثة";
+  const companyCR = fCompanyCR.value.trim() || dots;
+  const companyAddress = fCompanyAddress.value.trim() || dots;
+  const companyRepName = fCompanyRepName.value.trim() || dots;
+  const companyRepId = fCompanyRepId.value.trim() || dots;
+  const companyPhone = fCompanyPhone.value.trim() || dots;
+  const companyEmail = fCompanyEmail.value.trim() || dots;
+
+  const clientName = fClientName.value.trim() || dots;
+  const clientPhone = fClientPhone.value.trim() || dots;
+  const clientCR = fClientCR.value.trim() || dots;
+  const clientAddress = fClientAddress.value.trim() || fDeliveryLocation.value.trim() || dots;
+  const clientRepName = fClientRepName.value.trim() || clientName;
+  const clientRepId = fClientRepId.value.trim() || dots;
+  const clientEmail = fClientEmail.value.trim() || dots;
+
+  const location = fDeliveryLocation.value.trim() || "الرياض";
+  const paymentMethod = fPaymentMethod.value.trim() || "100% عند التعميد";
+  const warrantyYears = fWarrantyYears.value.trim() || "3";
+
+  const subtotal = currentItems.reduce((sum, it) => sum + itemTotal(it), 0);
+  const deliveryCost = currentDeliveryCost();
+  const taxBase = subtotal + deliveryCost;
+  const tax = taxBase * 0.15;
+  const total = taxBase + tax;
+
+  const additionalClauses = fAdditionalClauses.value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map(
+      (clause, idx) => `
+        <div class="aqd-clause">
+          <div class="aqd-clause-title">بند إضافي ${idx + 1}</div>
+          <div class="aqd-clause-content">${escapeHtml(clause)}</div>
+        </div>`
+    )
+    .join("");
+
+  return `
+    <div class="quote-pdf-header">
+      <div class="pdf-header-top1">
+        <div class="pdf-logo-box">
+          <svg viewBox="0 0 48 48" width="40" height="40"><path d="M10 30V16a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="6" y="30" width="36" height="6" rx="2" fill="currentColor"/><path d="M9 36v4M39 36v4" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="pdf-main-title">عقد اتفاق</div>
+      </div>
+      <p style="margin-bottom:16px;"><strong>تاريخ العقد:</strong> ${today}</p>
+    </div>
+
+    <div class="pdf-header-top2" style="align-items:stretch;">
+      <div class="pdf-highlight-box" style="flex:1;">
+        <h3 class="pdf-client-name" style="font-size:1rem;">الطرف الأول</h3>
+        <p class="pdf-intro-text">${escapeHtml(companyName)}<br>سجل تجاري: ${escapeHtml(companyCR)}<br>العنوان: ${escapeHtml(companyAddress)}<br>ممثل العقد: ${escapeHtml(companyRepName)}<br>هوية: ${escapeHtml(companyRepId)}</p>
+      </div>
+      <div class="pdf-highlight-box" style="flex:1;">
+        <h3 class="pdf-client-name" style="font-size:1rem;">الطرف الثاني</h3>
+        <p class="pdf-intro-text">${escapeHtml(clientName)}<br>سجل تجاري: ${escapeHtml(clientCR)}<br>المقر: ${escapeHtml(clientAddress)}<br>ممثل العقد: ${escapeHtml(clientRepName)}<br>هوية: ${escapeHtml(clientRepId)}</p>
+      </div>
+    </div>
+
+    <div class="aqd-clause"><div class="aqd-clause-title">تمهيد</div><div class="aqd-clause-content">حيث أن الطرف الأول يعمل في مجال تصميم وتوريد وتركيب الأثاث المكتبي، فقد رغب الطرف الثاني بالحصول على خدمات ومنتجات الطرف الأول حسب ما سيتم إيضاحه في بنود هذا العقد، وبناءً عليه فقد اتفق الطرفان وهما بكامل أهليتهما الشرعية المعتبرة على الآتي:</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">أولاً</div><div class="aqd-clause-content">يعتبر التمهيد السابق جزءاً لا يتجزأ من هذا العقد.</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">ثانياً: نطاق العمل</div><div class="aqd-clause-content">يلتزم الطرف الأول بتصنيع وتوريد وتركيب <strong>${currentItems.length}</strong> بنود من الأثاث المكتبي المحددة في عرض السعر الخاص بهذا العقد، ويتم التركيب في مدينة <strong>${escapeHtml(location)}</strong>.</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">ثالثاً: مدة التوريد</div><div class="aqd-clause-content">خلال المدة المتفق عليها من تاريخ العقد واعتماد المواصفات والألوان واستلام الدفعة المقدمة.</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">رابعاً: التسليم والتركيب</div><div class="aqd-clause-content">يقوم الطرف الأول بتركيب الأثاث في موقع العميل بمدينة ${escapeHtml(location)}، وعلى الطرف الثاني استلام البضاعة والتوقيع على سند الاستلام فور الانتهاء من التركيب.</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">خامساً: طريقة السداد</div><div class="aqd-clause-content">
+      <p>إجمالي قيمة العقد: <strong>${fmt(total)} ريال</strong>، شامل ضريبة القيمة المضافة، وشامل قيمة التركيب داخل مدينة ${escapeHtml(location)}.</p>
+      <p>وتكون طريقة السداد: ${escapeHtml(paymentMethod)}.</p>
+    </div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">سادساً: الضمان</div><div class="aqd-clause-content">يضمن الطرف الأول الأثاث ضد عيوب الصناعة لمدة <strong>${escapeHtml(warrantyYears)}</strong> سنوات من تاريخ التسليم، باستثناء سوء الاستخدام.</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">سابعاً: التأخير</div><div class="aqd-clause-content">في حال تأخر الطرف الأول عن المدة المتفق عليها، يحق للطرف الثاني خصم 1% من قيمة العقد عن كل أسبوع تأخير بحد أقصى 10%.</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">ثامناً: حل النزاعات</div><div class="aqd-clause-content">يتم حل أي خلاف بالتراضي، فإن تعذر فالتحكيم وفق نظام التحكيم السعودي، ثم المحاكم المختصة.</div></div>
+    <div class="aqd-clause"><div class="aqd-clause-title">تاسعاً: نسخ العقد</div><div class="aqd-clause-content">تحرر العقد من نسختين أصليتين، بيد كل طرف نسخة.</div></div>
+    ${additionalClauses}
+
+    <div class="quote-footer">
+      <div class="pricing-summary">
+        <h3 class="section-title">الطرف الأول: ${escapeHtml(companyName)}</h3>
+        <div class="summary-row"><span>رقم التواصل:</span><span class="amount">${escapeHtml(companyPhone)}</span></div>
+        <div class="summary-row"><span>البريد:</span><span class="amount">${escapeHtml(companyEmail)}</span></div>
+        <div class="summary-row"><span>التوقيع:</span><span class="amount">${dots}</span></div>
+      </div>
+      <div class="pricing-summary">
+        <h3 class="section-title">الطرف الثاني: ${escapeHtml(clientName)}</h3>
+        <div class="summary-row"><span>رقم التواصل:</span><span class="amount">${escapeHtml(clientPhone)}</span></div>
+        <div class="summary-row"><span>البريد:</span><span class="amount">${escapeHtml(clientEmail)}</span></div>
+        <div class="summary-row"><span>التوقيع:</span><span class="amount">${dots}</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function openPreview(html) {
+  document.getElementById("previewDoc").innerHTML = html;
   document.getElementById("previewOverlay").hidden = false;
+}
+
+document.getElementById("previewBtn").addEventListener("click", () => openPreview(buildPreviewHtml()));
+document.getElementById("contractBtn").addEventListener("click", () => {
+  if (!fClientName.value.trim()) {
+    alert("الرجاء إدخال اسم العميل قبل إنشاء العقد");
+    return;
+  }
+  openPreview(buildContractHtml());
+});
+document.getElementById("deliveryReportBtn").addEventListener("click", () => {
+  if (!fClientName.value.trim()) {
+    alert("الرجاء إدخال اسم العميل قبل إنشاء محضر التسليم");
+    return;
+  }
+  openPreview(buildDeliveryReportHtml());
 });
 document.getElementById("previewCloseBtn").addEventListener("click", () => {
   document.getElementById("previewOverlay").hidden = true;
@@ -576,6 +828,28 @@ function renderSavedQuotes(list) {
       fDeliveryLocation.value = q.deliveryLocation || "";
       fDeliveryCost.value = q.deliveryCost || 0;
       fTerms.value = q.terms || "";
+      fBankName.value = (q.bankDetails && q.bankDetails.bankName) || "";
+      fBankAccountName.value = (q.bankDetails && q.bankDetails.accountName) || "";
+      fBankAccountNumber.value = (q.bankDetails && q.bankDetails.accountNumber) || "";
+      fBankIban.value = (q.bankDetails && q.bankDetails.iban) || "";
+      fSalesRepName.value = (q.salesRep && q.salesRep.name) || "";
+      fSalesRepPhone.value = (q.salesRep && q.salesRep.phone) || "";
+      const cd = q.contractDetails || {};
+      fCompanyName.value = cd.companyName || "";
+      fCompanyCR.value = cd.companyCR || "";
+      fCompanyAddress.value = cd.companyAddress || "";
+      fCompanyRepName.value = cd.companyRepName || "";
+      fCompanyRepId.value = cd.companyRepId || "";
+      fCompanyPhone.value = cd.companyPhone || "";
+      fCompanyEmail.value = cd.companyEmail || "";
+      fClientCR.value = cd.clientCR || "";
+      fClientAddress.value = cd.clientAddress || "";
+      fClientRepName.value = cd.clientRepName || "";
+      fClientRepId.value = cd.clientRepId || "";
+      fClientEmail.value = cd.clientEmail || "";
+      fPaymentMethod.value = cd.paymentMethod || "";
+      fWarrantyYears.value = cd.warrantyYears || "";
+      fAdditionalClauses.value = cd.additionalClauses || "";
       currentItems = q.items.map(hydrateItem);
       renderItems();
       recalcTotals();
@@ -634,6 +908,33 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
         deliveryLocation: fDelivery.checked ? fDeliveryLocation.value.trim() : "",
         deliveryCost: currentDeliveryCost(),
         terms: fTerms.value.trim(),
+        bankDetails: {
+          bankName: fBankName.value.trim(),
+          accountName: fBankAccountName.value.trim(),
+          accountNumber: fBankAccountNumber.value.trim(),
+          iban: fBankIban.value.trim(),
+        },
+        salesRep: {
+          name: fSalesRepName.value.trim(),
+          phone: fSalesRepPhone.value.trim(),
+        },
+        contractDetails: {
+          companyName: fCompanyName.value.trim(),
+          companyCR: fCompanyCR.value.trim(),
+          companyAddress: fCompanyAddress.value.trim(),
+          companyRepName: fCompanyRepName.value.trim(),
+          companyRepId: fCompanyRepId.value.trim(),
+          companyPhone: fCompanyPhone.value.trim(),
+          companyEmail: fCompanyEmail.value.trim(),
+          clientCR: fClientCR.value.trim(),
+          clientAddress: fClientAddress.value.trim(),
+          clientRepName: fClientRepName.value.trim(),
+          clientRepId: fClientRepId.value.trim(),
+          clientEmail: fClientEmail.value.trim(),
+          paymentMethod: fPaymentMethod.value.trim(),
+          warrantyYears: fWarrantyYears.value.trim(),
+          additionalClauses: fAdditionalClauses.value.trim(),
+        },
         items: payloadItems,
       }),
     });
