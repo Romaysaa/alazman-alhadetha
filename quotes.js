@@ -401,14 +401,96 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
 
 document.getElementById("newBtn").addEventListener("click", resetForm);
 
+function formatItemSpecsHtml(fields, attributes, pathPrefix) {
+  return fields
+    .map((field) => {
+      const path = pathPrefix + field.key;
+      const raw = attributes[path];
+      if (!raw || String(raw).trim() === "" || raw === "لا يوجد") return "";
+      const parts = [`<span class="main-spec"><strong>${escapeHtml(field.key)}:</strong> ${escapeHtml(raw)}</span>`];
+      const childFields = (field.optionChildren && field.optionChildren[raw]) || field.children;
+      if (childFields) {
+        childFields.forEach((child) => {
+          const childVal = attributes[path + "." + child.key];
+          if (childVal && String(childVal).trim() !== "" && childVal !== "لا يوجد") {
+            parts.push(`<span class="sub-spec">${escapeHtml(child.key)}: ${escapeHtml(childVal)}</span>`);
+          }
+        });
+      }
+      return `<div class="spec-group">${parts.join(" ، ")}</div>`;
+    })
+    .join("");
+}
+
+function buildPreviewHtml() {
+  const rows = currentItems
+    .map((item, idx) => {
+      const specFields = CATEGORY_FIELDS[item.category];
+      const specsHtml = `
+        <div class="spec-group"><span class="main-spec" style="font-size:16px;font-weight:bold;">نوع المنتج: ${escapeHtml(effectiveType(item) || "؟؟؟؟")}</span></div>
+        ${specFields ? formatItemSpecsHtml(specFields, item.attributes, "") : ""}
+        ${item.itemNotes ? `<div class="spec-group"><span class="main-spec">ملاحظات: ${escapeHtml(item.itemNotes)}</span></div>` : ""}
+      `;
+      const total = itemTotal(item);
+      return `<tr>
+        <td class="text-center">${idx + 1}</td>
+        <td class="specs-cell">${specsHtml}</td>
+        <td class="text-center">${item.qty}</td>
+        <td class="text-center">${fmt(item.unitPrice)}</td>
+        <td class="text-center">${fmt(total)}</td>
+        <td class="text-center">${item.imageUrl ? `<img src="${escapeAttr(item.imageUrl)}" alt="" class="product-thumbnail">` : ""}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const subtotal = currentItems.reduce((sum, it) => sum + itemTotal(it), 0);
+  const tax = subtotal * 0.15;
+  const total = subtotal + tax;
+
+  return `
+    <div class="quote-pdf-header">
+      <div class="pdf-header-top1">
+        <div class="pdf-logo-box">
+          <svg viewBox="0 0 48 48" width="40" height="40"><path d="M10 30V16a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="6" y="30" width="36" height="6" rx="2" fill="currentColor"/><path d="M9 36v4M39 36v4" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="pdf-main-title">عرض سعر — الأزمان الحديثة</div>
+      </div>
+      <div class="pdf-header-top2">
+        <div class="pdf-client-box">
+          <div class="pdf-highlight-box"><h3 class="pdf-client-name">عناية السادة / ${escapeHtml(fClientName.value.trim() || "-")}</h3></div>
+          <p class="pdf-intro-text">يسرنا أن نقدم لكم عرضنا الفني والمالي الآتي:</p>
+        </div>
+        <div class="pdf-date-box">
+          <span>تاريخ العرض: </span><span>${new Date().toLocaleDateString("en-GB")}</span><br>
+          <span>انتهاء العرض: </span><span>${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB")}</span>
+        </div>
+      </div>
+    </div>
+
+    <table class="products-table">
+      <thead>
+        <tr><th>م</th><th>المواصفات الفنية</th><th>الكمية</th><th>السعر</th><th>المجموع</th><th>صورة</th></tr>
+      </thead>
+      <tbody>${rows || `<tr><td colspan="6" class="text-center">لا توجد منتجات</td></tr>`}</tbody>
+    </table>
+
+    <div class="pricing-summary">
+      <div class="summary-row"><span>المجموع:</span><span class="amount">${fmt(subtotal)} ريال</span></div>
+      <div class="summary-row"><span>ضريبة القيمة المضافة (15%):</span><span class="amount">${fmt(tax)} ريال</span></div>
+      <div class="summary-row total"><span>المجموع الكلي:</span><span class="amount">${fmt(total)} ريال</span></div>
+    </div>
+    ${fDelivery.checked ? `<p class="preview-note">* يشمل توصيل خارج الرياض (تُحدَّد تكلفة التوصيل بشكل منفصل)</p>` : ""}
+  `;
+}
+
 document.getElementById("previewBtn").addEventListener("click", () => {
-  const lines = currentItems
-    .map((it) => `${effectiveType(it) || "بدون اسم"} × ${it.qty} = ${fmt(itemTotal(it))} ريال`)
-    .join("\n");
-  alert(
-    `عميل: ${fClientName.value || "-"}\nجوال: ${fClientPhone.value || "-"}\n\n${lines}\n\nالإجمالي شامل الضريبة: ${tTotal.textContent} ريال`
-  );
+  document.getElementById("previewDoc").innerHTML = buildPreviewHtml();
+  document.getElementById("previewOverlay").hidden = false;
 });
+document.getElementById("previewCloseBtn").addEventListener("click", () => {
+  document.getElementById("previewOverlay").hidden = true;
+});
+document.getElementById("previewPrintBtn").addEventListener("click", () => window.print());
 
 async function authFetch(url, options = {}) {
   const user = window.netlifyIdentity && netlifyIdentity.currentUser();
