@@ -13,6 +13,10 @@
 
 * { box-sizing: border-box; }
 
+/* The [hidden] attribute must always win over any other display rule
+   (several components below set display:flex/grid unconditionally). */
+[hidden] { display: none !important; }
+
 html { scroll-behavior: smooth; }
 
 body {
