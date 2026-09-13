@@ -495,6 +495,24 @@ function formatItemSpecsHtml(fields, attributes, pathPrefix) {
     .join("");
 }
 
+function getBankRows() {
+  return [
+    ["اسم البنك", fBankName.value.trim()],
+    ["إسم الحساب", fBankAccountName.value.trim()],
+    ["رقم الحساب", fBankAccountNumber.value.trim()],
+    ["رقم الآيبان", fBankIban.value.trim()],
+  ].filter(([, value]) => value);
+}
+
+function bankDetailsSectionHtml() {
+  const bankRows = getBankRows();
+  if (!bankRows.length) return "";
+  return `<div class="terms-section">
+    <h3 class="section-title">تفاصيل الحساب البنكي</h3>
+    <ul class="terms-list">${bankRows.map(([label, value]) => `<li>${escapeHtml(label)}: ${escapeHtml(value)}</li>`).join("")}</ul>
+  </div>`;
+}
+
 function buildPreviewHtml() {
   const rows = currentItems
     .map((item, idx) => {
@@ -528,12 +546,7 @@ function buildPreviewHtml() {
     .filter(Boolean);
   const termsLines = customTermsLines.length ? customTermsLines : DEFAULT_TERMS;
 
-  const bankRows = [
-    ["اسم البنك", fBankName.value.trim()],
-    ["إسم الحساب", fBankAccountName.value.trim()],
-    ["رقم الحساب", fBankAccountNumber.value.trim()],
-    ["رقم الآيبان", fBankIban.value.trim()],
-  ].filter(([, value]) => value);
+  const bankRows = getBankRows();
   const salesRepName = fSalesRepName.value.trim();
   const salesRepPhone = fSalesRepPhone.value.trim();
 
@@ -739,6 +752,7 @@ function buildContractHtml() {
     <div class="aqd-clause"><div class="aqd-clause-title">خامساً: طريقة السداد</div><div class="aqd-clause-content">
       <p>إجمالي قيمة العقد: <strong>${fmt(total)} ريال</strong>، شامل ضريبة القيمة المضافة، وشامل قيمة التركيب داخل مدينة ${escapeHtml(location)}.</p>
       <p>وتكون طريقة السداد: ${escapeHtml(paymentMethod)}.</p>
+      ${getBankRows().length ? `<p>يتم تحويل الدفعات إلى الحساب البنكي التالي:</p>${bankDetailsSectionHtml()}` : ""}
     </div></div>
     <div class="aqd-clause"><div class="aqd-clause-title">سادساً: الضمان</div><div class="aqd-clause-content">يضمن الطرف الأول الأثاث ضد عيوب الصناعة لمدة <strong>${escapeHtml(warrantyYears)}</strong> سنوات من تاريخ التسليم، باستثناء سوء الاستخدام.</div></div>
     <div class="aqd-clause"><div class="aqd-clause-title">سابعاً: التأخير</div><div class="aqd-clause-content">في حال تأخر الطرف الأول عن المدة المتفق عليها، يحق للطرف الثاني خصم 1% من قيمة العقد عن كل أسبوع تأخير بحد أقصى 10%.</div></div>
